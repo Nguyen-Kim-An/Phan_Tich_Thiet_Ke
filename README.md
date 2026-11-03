@@ -1,4 +1,4 @@
-# SmartFashion
+# MaisonAI / SmartFashion
 
 AI-enhanced single-store fashion commerce platform implemented from `HTTT.pdf`.
 
@@ -16,7 +16,29 @@ AI-enhanced single-store fashion commerce platform implemented from `HTTT.pdf`.
 2. Run `docker compose up --build`.
 3. Open `http://localhost:3000`; API docs are available at `http://localhost:4000/docs`.
 
-For frontend/API development without containers, run `npm install` and `npm run dev` while PostgreSQL, Redis, and the AI service are available.
+### Chạy riêng giao diện, không cần Docker
+
+```powershell
+npm install
+npm run dev -w @smartfashion/web
+```
+
+Mở `http://localhost:3000`. Các luồng giao diện và catalog demo chạy độc lập; API, PostgreSQL, Redis và AI service chỉ cần khi kiểm thử tích hợp đầy đủ.
+
+### Thu thập lại ảnh sản phẩm thật
+
+```powershell
+npm run crawl:assets
+```
+
+Crawler đọc các collection công khai của Everlane, tải hai ảnh cho mỗi sản phẩm vào `apps/web/public/fashion` và tạo `apps/web/src/data/crawled-catalog.json`. Nguồn ảnh được giữ trong metadata; giá VND và tồn kho là dữ liệu mô phỏng cho bài tập học thuật.
+
+### Kiểm tra production frontend
+
+```powershell
+npm run build -w @smartfashion/web
+npm run start -w @smartfashion/web
+```
 
 ## Relationship invariants
 

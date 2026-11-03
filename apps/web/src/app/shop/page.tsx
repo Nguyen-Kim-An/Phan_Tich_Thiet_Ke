@@ -1,2 +1,16 @@
-import {SearchRail} from '@/components/search-rail';import {ProductCard} from '@/components/product-card';import {products} from '@/lib/catalog';
-export default async function Shop({searchParams}:{searchParams:Promise<{q?:string;mode?:string}>}){const {q='',mode=''}=await searchParams;const normalized=q.toLowerCase();const filtered=normalized?products.filter(p=>(p.name+' '+p.category+' '+p.description).toLowerCase().includes(normalized.split(' ')[0])):products;const shown=(filtered.length?filtered:products).map((p,i)=>mode?{...p,match:96-i*4}:p);return <div className="shop-page section-pad"><header className="shop-heading"><p>Bộ sưu tập hiện tại</p><h1>Tìm một món.<br/>Gặp một phiên bản mới.</h1></header><SearchRail compact/>{q&&<div className="result-note">Kết quả {mode==='image'?'hình ảnh':mode==='voice'?'giọng nói':'ngữ nghĩa'} cho “{q}” <span>{shown.length} sản phẩm</span></div>}<div className="filter-row"><button className="active">Tất cả</button><button>Áo</button><button>Quần</button><button>Váy</button><button>Áo khoác</button><button>Phụ kiện</button></div><div className="product-grid shop-grid">{shown.map((p,i)=><ProductCard product={p} index={i} key={p.productId}/>)}</div></div>}
+import { ShopCatalog } from '@/components/shop-catalog';
+
+export default async function Shop({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; mode?: string; category?: string }>;
+}) {
+  const params = await searchParams;
+  return (
+    <ShopCatalog
+      initialQuery={params.q ?? ''}
+      initialMode={params.mode ?? ''}
+      initialCategory={params.category ?? ''}
+    />
+  );
+}

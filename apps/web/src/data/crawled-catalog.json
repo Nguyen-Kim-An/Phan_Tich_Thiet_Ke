@@ -1,0 +1,1055 @@
+{
+  "generatedAt": "2026-11-03T10:20:22.507Z",
+  "source": {
+    "name": "Everlane",
+    "collection": "https://www.everlane.com/collections/womens-new-arrivals",
+    "robots": "https://www.everlane.com/robots.txt"
+  },
+  "note": "Images are downloaded for a non-commercial academic prototype. Product metadata remains attributed to its source; VND prices and stock are simulated for the coursework demo.",
+  "products": [
+    {
+      "productId": "7539347619926",
+      "handle": "womens-boxy-oxford-white",
+      "name": "The Boxy Oxford — White",
+      "category": "Áo",
+      "categorySlug": "ao",
+      "price": 1390000,
+      "description": "Made of soft, premium organic cotton, the Boxy Oxford features a classic point collar, dropped shoulders, a clean button front, oversized patch pockets, and of course, relaxed boxy shape. Polish it up with trousers and heels, or dress it down with jeans and sneakers for a casual-yet-put-together look. Either way, you’ll look like you know what you’re doing. Buy a few, we won’t judge.",
+      "image": "/fashion/ao-womens-boxy-oxford-white-01.jpg",
+      "imageAlt": "/fashion/ao-womens-boxy-oxford-white-02.jpg",
+      "colors": [
+        "White"
+      ],
+      "variants": [
+        {
+          "variantId": "42242667937878",
+          "sku": "F-BTDN-CTN-OOXF-BF-WHT-XXS",
+          "colorCode": "#d8d4cd",
+          "colorName": "White",
+          "size": "XXS",
+          "price": 1390000,
+          "stock": 7
+        },
+        {
+          "variantId": "42242667970646",
+          "sku": "F-BTDN-CTN-OOXF-BF-WHT-XS",
+          "colorCode": "#d8d4cd",
+          "colorName": "White",
+          "size": "XS",
+          "price": 1390000,
+          "stock": 6
+        },
+        {
+          "variantId": "42242668003414",
+          "sku": "F-BTDN-CTN-OOXF-BF-WHT-S",
+          "colorCode": "#d8d4cd",
+          "colorName": "White",
+          "size": "S",
+          "price": 1390000,
+          "stock": 5
+        },
+        {
+          "variantId": "42242668036182",
+          "sku": "F-BTDN-CTN-OOXF-BF-WHT-M",
+          "colorCode": "#d8d4cd",
+          "colorName": "White",
+          "size": "M",
+          "price": 1390000,
+          "stock": 14
+        },
+        {
+          "variantId": "42242668068950",
+          "sku": "F-BTDN-CTN-OOXF-BF-WHT-L",
+          "colorCode": "#d8d4cd",
+          "colorName": "White",
+          "size": "L",
+          "price": 1390000,
+          "stock": 13
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-tops",
+        "productPage": "https://www.everlane.com/products/womens-boxy-oxford-white",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/F-BTDN-CTN-OOXF-BF-WHT_0038.jpg?v=1784064032",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/50e68f27_18b2.jpg?v=1753411392"
+        ]
+      }
+    },
+    {
+      "productId": "7539347685462",
+      "handle": "womens-boxy-oxford-black-white-stripe",
+      "name": "The Boxy Oxford — Black / White",
+      "category": "Áo",
+      "categorySlug": "ao",
+      "price": 1580000,
+      "description": "Made of soft, premium organic cotton, the Boxy Oxford features a classic point collar, dropped shoulders, a clean button front, oversized patch pockets, and of course, relaxed boxy shape. Polish it up with trousers and heels, or dress it down with jeans and sneakers for a casual-yet-put-together look. Either way, you’ll look like you know what you’re doing. Buy a few, we won’t judge.",
+      "image": "/fashion/ao-womens-boxy-oxford-black-white-stripe-01.jpg",
+      "imageAlt": "/fashion/ao-womens-boxy-oxford-black-white-stripe-02.jpg",
+      "colors": [
+        "Black"
+      ],
+      "variants": [
+        {
+          "variantId": "42242668396630",
+          "sku": "F-BTDN-CTN-OOXF-BF-GRYSTRP-XXS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black / White",
+          "size": "XXS",
+          "price": 1580000,
+          "stock": 4
+        },
+        {
+          "variantId": "42242668429398",
+          "sku": "F-BTDN-CTN-OOXF-BF-GRYSTRP-XS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black / White",
+          "size": "XS",
+          "price": 1580000,
+          "stock": 13
+        },
+        {
+          "variantId": "42242668462166",
+          "sku": "F-BTDN-CTN-OOXF-BF-GRYSTRP-S",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black / White",
+          "size": "S",
+          "price": 1580000,
+          "stock": 12
+        },
+        {
+          "variantId": "42242668494934",
+          "sku": "F-BTDN-CTN-OOXF-BF-GRYSTRP-M",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black / White",
+          "size": "M",
+          "price": 1580000,
+          "stock": 11
+        },
+        {
+          "variantId": "42242668527702",
+          "sku": "F-BTDN-CTN-OOXF-BF-GRYSTRP-L",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black / White",
+          "size": "L",
+          "price": 1580000,
+          "stock": 10
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-tops",
+        "productPage": "https://www.everlane.com/products/womens-boxy-oxford-black-white-stripe",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/7e740227_9bf1.jpg?v=1753411395",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/e709bbbb_ba7e.jpg?v=1753411395"
+        ]
+      }
+    },
+    {
+      "productId": "7539347652694",
+      "handle": "womens-boxy-oxford-light-blue",
+      "name": "The Boxy Oxford — Light Blue",
+      "category": "Áo",
+      "categorySlug": "ao",
+      "price": 1770000,
+      "description": "Made of soft, premium organic cotton, the Boxy Oxford features a classic point collar, dropped shoulders, a clean button front, oversized patch pockets, and of course, relaxed boxy shape. Polish it up with trousers and heels, or dress it down with jeans and sneakers for a casual-yet-put-together look. Either way, you’ll look like you know what you’re doing. Buy a few, we won’t judge.",
+      "image": "/fashion/ao-womens-boxy-oxford-light-blue-01.jpg",
+      "imageAlt": "/fashion/ao-womens-boxy-oxford-light-blue-02.jpg",
+      "colors": [
+        "Blue"
+      ],
+      "variants": [
+        {
+          "variantId": "42242668167254",
+          "sku": "F-BTDN-CTN-OOXF-BF-BLU-XXS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Light Blue",
+          "size": "XXS",
+          "price": 1770000,
+          "stock": 13
+        },
+        {
+          "variantId": "42242668200022",
+          "sku": "F-BTDN-CTN-OOXF-BF-BLU-XS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Light Blue",
+          "size": "XS",
+          "price": 1770000,
+          "stock": 12
+        },
+        {
+          "variantId": "42242668232790",
+          "sku": "F-BTDN-CTN-OOXF-BF-BLU-S",
+          "colorCode": "#d8d4cd",
+          "colorName": "Light Blue",
+          "size": "S",
+          "price": 1770000,
+          "stock": 6
+        },
+        {
+          "variantId": "42242668265558",
+          "sku": "F-BTDN-CTN-OOXF-BF-BLU-M",
+          "colorCode": "#d8d4cd",
+          "colorName": "Light Blue",
+          "size": "M",
+          "price": 1770000,
+          "stock": 5
+        },
+        {
+          "variantId": "42242668298326",
+          "sku": "F-BTDN-CTN-OOXF-BF-BLU-L",
+          "colorCode": "#d8d4cd",
+          "colorName": "Light Blue",
+          "size": "L",
+          "price": 1770000,
+          "stock": 4
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-tops",
+        "productPage": "https://www.everlane.com/products/womens-boxy-oxford-light-blue",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/2021-08-08_F-BTDN-CTN-OOXF-BF-BLU_01.jpg?v=1784064112",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/57bdaa7b_1244.jpg?v=1753411394"
+        ]
+      }
+    },
+    {
+      "productId": "7539345850454",
+      "handle": "womens-live-in-pant-black",
+      "name": "The Dream Pant® — Black",
+      "category": "Quần",
+      "categorySlug": "quan",
+      "price": 1690000,
+      "description": "Made of soft double-knit fabric, the Dream Pant® features an elastic waist, pintuck detailing, and a sleek tapered leg. Plus, it has a flat finish, so it looks polished, but it’s comfortable enough to nap in. The best part? It’s wrinkle resistant. From morning meetings to afternoon errands to late-night lounging—this pant looks (and feels) like a dream.",
+      "image": "/fashion/quan-womens-live-in-pant-black-01.jpg",
+      "imageAlt": "/fashion/quan-womens-live-in-pant-black-02.jpg",
+      "colors": [
+        "Black"
+      ],
+      "variants": [
+        {
+          "variantId": "42242651914326",
+          "sku": "F-BTM-CTN-PNT-DRM-BLK-XXS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "XXS",
+          "price": 1690000,
+          "stock": 15
+        },
+        {
+          "variantId": "42242651947094",
+          "sku": "F-BTM-CTN-PNT-DRM-BLK-XS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "XS",
+          "price": 1690000,
+          "stock": 9
+        },
+        {
+          "variantId": "42242651979862",
+          "sku": "F-BTM-CTN-PNT-DRM-BLK-S",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "S",
+          "price": 1690000,
+          "stock": 8
+        },
+        {
+          "variantId": "42242652012630",
+          "sku": "F-BTM-CTN-PNT-DRM-BLK-M",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "M",
+          "price": 1690000,
+          "stock": 7
+        },
+        {
+          "variantId": "42242652045398",
+          "sku": "F-BTM-CTN-PNT-DRM-BLK-L",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "L",
+          "price": 1690000,
+          "stock": 16
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-pants-trousers",
+        "productPage": "https://www.everlane.com/products/womens-live-in-pant-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/26613b89_7dec.jpg?v=1753411432",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/113190b1_8fe1.jpg?v=1753411432"
+        ]
+      }
+    },
+    {
+      "productId": "7539349815382",
+      "handle": "womens-utility-arc-pant-organic-black",
+      "name": "The Utility Barrel Pant — Black — Regular",
+      "category": "Quần",
+      "categorySlug": "quan",
+      "price": 1880000,
+      "description": "To quote you—our customers, there’s really no competition, the Utility Barrel Pant really is that good. Made of medium-weight cotton twill with just a touch of stretch, it features a high rise to hold you in, and that main-character-energy curved leg in an easy cropped length. Cool utilitarian paneling and butt-boosting patch pockets give you legs for days without all the hours of Pilates. Consider these your ultimate antidote to living in jeans.",
+      "image": "/fashion/quan-womens-utility-arc-pant-organic-black-01.jpg",
+      "imageAlt": "/fashion/quan-womens-utility-arc-pant-organic-black-02.jpg",
+      "colors": [
+        "Black"
+      ],
+      "variants": [
+        {
+          "variantId": "42242689794134",
+          "sku": "F-BTM-CTN-BAREL-UTL-OBLK-000",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "000",
+          "price": 1880000,
+          "stock": 8
+        },
+        {
+          "variantId": "42242689826902",
+          "sku": "F-BTM-CTN-BAREL-UTL-OBLK-00",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "00",
+          "price": 1880000,
+          "stock": 7
+        },
+        {
+          "variantId": "42242689859670",
+          "sku": "F-BTM-CTN-BAREL-UTL-OBLK-0",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "0",
+          "price": 1880000,
+          "stock": 16
+        },
+        {
+          "variantId": "42242689892438",
+          "sku": "F-BTM-CTN-BAREL-UTL-OBLK-2",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "2",
+          "price": 1880000,
+          "stock": 15
+        },
+        {
+          "variantId": "42242689925206",
+          "sku": "F-BTM-CTN-BAREL-UTL-OBLK-4",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "4",
+          "price": 1880000,
+          "stock": 14
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-pants-trousers",
+        "productPage": "https://www.everlane.com/products/womens-utility-arc-pant-organic-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/2022-03-20_F-BTM-CTN-BAREL-UTL-OBLK_01_9d599c8d-5fd4-472f-b235-8d176dc1a85a.jpg?v=1789794378",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/9cb8da52_1b75.jpg?v=1753411410"
+        ]
+      }
+    },
+    {
+      "productId": "7539345031254",
+      "handle": "womens-easy-straight-leg-chino-black",
+      "name": "The Easy Pant — Black",
+      "category": "Quần",
+      "categorySlug": "quan",
+      "price": 2070000,
+      "description": "The Easy Pant is comfortable from hip to hem, thanks to its lightweight cotton twill fabric, breathable silhouette, and pull-on waistband. Because putting on pants shouldn’t be hard.",
+      "image": "/fashion/quan-womens-easy-straight-leg-chino-black-01.jpg",
+      "imageAlt": "/fashion/quan-womens-easy-straight-leg-chino-black-02.jpg",
+      "colors": [
+        "Black"
+      ],
+      "variants": [
+        {
+          "variantId": "42242647785558",
+          "sku": "F-BTM-CTN-PNT-TPWD-BLK-XXS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "XXS",
+          "price": 2070000,
+          "stock": 17
+        },
+        {
+          "variantId": "42242647818326",
+          "sku": "F-BTM-CTN-PNT-TPWD-BLK-XS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "XS",
+          "price": 2070000,
+          "stock": 16
+        },
+        {
+          "variantId": "42242647851094",
+          "sku": "F-BTM-CTN-PNT-TPWD-BLK-S",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "S",
+          "price": 2070000,
+          "stock": 10
+        },
+        {
+          "variantId": "42242647883862",
+          "sku": "F-BTM-CTN-PNT-TPWD-BLK-M",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "M",
+          "price": 2070000,
+          "stock": 9
+        },
+        {
+          "variantId": "42242647916630",
+          "sku": "F-BTM-CTN-PNT-TPWD-BLK-L",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "L",
+          "price": 2070000,
+          "stock": 8
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-pants-trousers",
+        "productPage": "https://www.everlane.com/products/womens-easy-straight-leg-chino-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/d88bb241_c853.jpg?v=1753411393",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/1a4c4be9_d5a4.jpg?v=1753411393"
+        ]
+      }
+    },
+    {
+      "productId": "7539357843542",
+      "handle": "womens-organic-cotton-weekend-tank-dress-black",
+      "name": "The Weekend Tank Dress — Black",
+      "category": "Váy",
+      "categorySlug": "vay",
+      "price": 1890000,
+      "description": "Made of lightweight cotton with a soft, lived-in feel, The Weekend Tank Dress is like your favorite vintage tee—in dress form. Complete with a classic crew neckline and a relaxed fit throughout, it’s an easy pick for warm-weather days. Trust us—your weekend won’t know what hit it.",
+      "image": "/fashion/vay-womens-organic-cotton-weekend-tank-dress-black-01.jpg",
+      "imageAlt": "/fashion/vay-womens-organic-cotton-weekend-tank-dress-black-02.jpg",
+      "colors": [
+        "Black"
+      ],
+      "variants": [
+        {
+          "variantId": "42242757722198",
+          "sku": "F-DRS-OCTN-SL-MID-BLK-XXS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "XXS",
+          "price": 1890000,
+          "stock": 12
+        },
+        {
+          "variantId": "42242757754966",
+          "sku": "F-DRS-OCTN-SL-MID-BLK-XS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "XS",
+          "price": 1890000,
+          "stock": 11
+        },
+        {
+          "variantId": "42242757787734",
+          "sku": "F-DRS-OCTN-SL-MID-BLK-S",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "S",
+          "price": 1890000,
+          "stock": 10
+        },
+        {
+          "variantId": "42242757820502",
+          "sku": "F-DRS-OCTN-SL-MID-BLK-M",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "M",
+          "price": 1890000,
+          "stock": 9
+        },
+        {
+          "variantId": "42242757853270",
+          "sku": "F-DRS-OCTN-SL-MID-BLK-L",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "L",
+          "price": 1890000,
+          "stock": 18
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-dresses",
+        "productPage": "https://www.everlane.com/products/womens-organic-cotton-weekend-tank-dress-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/aa12f7ae_d1dd.jpg?v=1753411526",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/4f2aad6c_e80e.jpg?v=1753411526"
+        ]
+      }
+    },
+    {
+      "productId": "7539351126102",
+      "handle": "womens-ribbed-tank-dress-black",
+      "name": "The ’90s Rib Dress — Black",
+      "category": "Váy",
+      "categorySlug": "vay",
+      "price": 2080000,
+      "description": "Designed to be the perfect curve hugging dress, The ’90s Rib Dress is made of premium cotton with a cutaway neckline, bra-friendly straps, and a midi length. It hugs you in just the right places with enough stretch for ultimate comfort. Keep it casual with our ReLeather Sneakers and our Everyone Denim Jacket.",
+      "image": "/fashion/vay-womens-ribbed-tank-dress-black-01.jpg",
+      "imageAlt": "/fashion/vay-womens-ribbed-tank-dress-black-02.jpg",
+      "colors": [
+        "Black"
+      ],
+      "variants": [
+        {
+          "variantId": "42242703622230",
+          "sku": "F-DRS-CTN-RIB-TNK-BLK-XXS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "XXS",
+          "price": 2080000,
+          "stock": 4
+        },
+        {
+          "variantId": "42242703654998",
+          "sku": "F-DRS-CTN-RIB-TNK-BLK-XS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "XS",
+          "price": 2080000,
+          "stock": 13
+        },
+        {
+          "variantId": "42242703687766",
+          "sku": "F-DRS-CTN-RIB-TNK-BLK-S",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "S",
+          "price": 2080000,
+          "stock": 12
+        },
+        {
+          "variantId": "42242703720534",
+          "sku": "F-DRS-CTN-RIB-TNK-BLK-M",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "M",
+          "price": 2080000,
+          "stock": 11
+        },
+        {
+          "variantId": "42242703753302",
+          "sku": "F-DRS-CTN-RIB-TNK-BLK-L",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "L",
+          "price": 2080000,
+          "stock": 10
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-dresses",
+        "productPage": "https://www.everlane.com/products/womens-ribbed-tank-dress-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/fbe39975_2da8.jpg?v=1753411390",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/2db22c79_24b6.jpg?v=1753411390"
+        ]
+      }
+    },
+    {
+      "productId": "7539350405206",
+      "handle": "womens-organic-weekend-tee-dress-black",
+      "name": "The Organic Cotton Weekend Tee Dress — Black",
+      "category": "Váy",
+      "categorySlug": "vay",
+      "price": 2270000,
+      "description": "Complete with a classic crew neckline, set-in sleeves, a front chest pocket, and a relaxed fit throughout, it’s an easy pick for warm-weather days. Trust us—your weekend won’t know what hit it.",
+      "image": "/fashion/vay-womens-organic-weekend-tee-dress-black-01.jpg",
+      "imageAlt": "/fashion/vay-womens-organic-weekend-tee-dress-black-02.jpg",
+      "colors": [
+        "Black"
+      ],
+      "variants": [
+        {
+          "variantId": "42242695430230",
+          "sku": "F-DRS-OCTN-T-SS-BLK-XXS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "XXS",
+          "price": 2270000,
+          "stock": 4
+        },
+        {
+          "variantId": "42242695462998",
+          "sku": "F-DRS-OCTN-T-SS-BLK-XS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "XS",
+          "price": 2270000,
+          "stock": 13
+        },
+        {
+          "variantId": "42242695495766",
+          "sku": "F-DRS-OCTN-T-SS-BLK-S",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "S",
+          "price": 2270000,
+          "stock": 12
+        },
+        {
+          "variantId": "42242695528534",
+          "sku": "F-DRS-OCTN-T-SS-BLK-M",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "M",
+          "price": 2270000,
+          "stock": 11
+        },
+        {
+          "variantId": "42242695561302",
+          "sku": "F-DRS-OCTN-T-SS-BLK-L",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "L",
+          "price": 2270000,
+          "stock": 10
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-dresses",
+        "productPage": "https://www.everlane.com/products/womens-organic-weekend-tee-dress-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/013563c2_c9e3.jpg?v=1753411456",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/b80f94c4_b8c2.jpg?v=1753411456"
+        ]
+      }
+    },
+    {
+      "productId": "7539336904790",
+      "handle": "womens-oversized-blazer-greyherringbone",
+      "name": "The Oversized Blazer in Wool — Grey Herringbone",
+      "category": "Áo khoác",
+      "categorySlug": "ao-khoac",
+      "price": 3490000,
+      "description": "Our Oversized Blazer in Wool has a roomy, menswear-inspired shape and modern look—complete with cuff buttons, flap pockets, and recycled shoulder pads that add the perfect amount of polish. Plus, it’s made with recycled Italian wool, which gives it a visual drape and tangible warmth.",
+      "image": "/fashion/ao-khoac-womens-oversized-blazer-greyherringbone-01.jpg",
+      "imageAlt": "/fashion/ao-khoac-womens-oversized-blazer-greyherringbone-02.jpg",
+      "colors": [
+        "Grey"
+      ],
+      "variants": [
+        {
+          "variantId": "42242579398742",
+          "sku": "F-OWTR-WLB-BLZ-OV-HRBN-00",
+          "colorCode": "#d8d4cd",
+          "colorName": "Grey Herringbone",
+          "size": "00",
+          "price": 3490000,
+          "stock": 16
+        },
+        {
+          "variantId": "42242579431510",
+          "sku": "F-OWTR-WLB-BLZ-OV-HRBN-0",
+          "colorCode": "#d8d4cd",
+          "colorName": "Grey Herringbone",
+          "size": "0",
+          "price": 3490000,
+          "stock": 15
+        },
+        {
+          "variantId": "42242579464278",
+          "sku": "F-OWTR-WLB-BLZ-OV-HRBN-2",
+          "colorCode": "#d8d4cd",
+          "colorName": "Grey Herringbone",
+          "size": "2",
+          "price": 3490000,
+          "stock": 9
+        },
+        {
+          "variantId": "42242579497046",
+          "sku": "F-OWTR-WLB-BLZ-OV-HRBN-4",
+          "colorCode": "#d8d4cd",
+          "colorName": "Grey Herringbone",
+          "size": "4",
+          "price": 3490000,
+          "stock": 8
+        },
+        {
+          "variantId": "42242579529814",
+          "sku": "F-OWTR-WLB-BLZ-OV-HRBN-6",
+          "colorCode": "#d8d4cd",
+          "colorName": "Grey Herringbone",
+          "size": "6",
+          "price": 3490000,
+          "stock": 7
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-outerwear",
+        "productPage": "https://www.everlane.com/products/womens-oversized-blazer-greyherringbone",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/31083f2f_764e.jpg?v=1753411411",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/5552a505_15db.jpg?v=1753411411"
+        ]
+      }
+    },
+    {
+      "productId": "7562798661718",
+      "handle": "womens-renew-long-puffer-black",
+      "name": "The Long Puffer — Black",
+      "category": "Áo khoác",
+      "categorySlug": "ao-khoac",
+      "price": 3680000,
+      "description": "Plus, it’s made entirely* from our technical, 100% recycled fabric and is filled with 100% recycled high-performance Primaloft insulation. *Some of the zippers and trim aren’t 100% recycled, but we’re working on it. We’ve eliminated 90% of the virgin plastic from our supply chain. Learn about what we’ve done—and the challenges ahead—on our Sustainability page.",
+      "image": "/fashion/ao-khoac-womens-renew-long-puffer-black-01.jpg",
+      "imageAlt": "/fashion/ao-khoac-womens-renew-long-puffer-black-02.jpg",
+      "colors": [
+        "Black"
+      ],
+      "variants": [
+        {
+          "variantId": "42342918979670",
+          "sku": "F-OTWR-NYLE-PUFF-LNG-BLK-XXS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "XXS",
+          "price": 3680000,
+          "stock": 14
+        },
+        {
+          "variantId": "42342919012438",
+          "sku": "F-OTWR-NYLE-PUFF-LNG-BLK-XS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "XS",
+          "price": 3680000,
+          "stock": 13
+        },
+        {
+          "variantId": "42342919045206",
+          "sku": "F-OTWR-NYLE-PUFF-LNG-BLK-S",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "S",
+          "price": 3680000,
+          "stock": 12
+        },
+        {
+          "variantId": "42342919077974",
+          "sku": "F-OTWR-NYLE-PUFF-LNG-BLK-M",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "M",
+          "price": 3680000,
+          "stock": 6
+        },
+        {
+          "variantId": "42342919110742",
+          "sku": "F-OTWR-NYLE-PUFF-LNG-BLK-L",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "L",
+          "price": 3680000,
+          "stock": 5
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-outerwear",
+        "productPage": "https://www.everlane.com/products/womens-renew-long-puffer-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/8fb64cfd_6cdc.jpg?v=1753411460",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/c4bf1166_deca.jpg?v=1753411460"
+        ]
+      }
+    },
+    {
+      "productId": "7562798301270",
+      "handle": "womens-wool-oversized-blazer-glenplaid",
+      "name": "The Oversized Blazer in Wool — Glen Plaid",
+      "category": "Áo khoác",
+      "categorySlug": "ao-khoac",
+      "price": 3870000,
+      "description": "Our Oversized Blazer in Wool has a roomy, menswear-inspired shape and modern look—complete with cuff buttons, flap pockets, and recycled shoulder pads that add the perfect amount of polish. Plus, it’s made with recycled Italian wool, which gives it a visual drape and tangible warmth.",
+      "image": "/fashion/ao-khoac-womens-wool-oversized-blazer-glenplaid-01.jpg",
+      "imageAlt": "/fashion/ao-khoac-womens-wool-oversized-blazer-glenplaid-02.jpg",
+      "colors": [
+        "Grey"
+      ],
+      "variants": [
+        {
+          "variantId": "42342916915286",
+          "sku": "F-OWTR-WLB-BLZ-OV-LTPLD-00",
+          "colorCode": "#d8d4cd",
+          "colorName": "Glen Plaid",
+          "size": "00",
+          "price": 3870000,
+          "stock": 15
+        },
+        {
+          "variantId": "42342916948054",
+          "sku": "F-OWTR-WLB-BLZ-OV-LTPLD-0",
+          "colorCode": "#d8d4cd",
+          "colorName": "Glen Plaid",
+          "size": "0",
+          "price": 3870000,
+          "stock": 14
+        },
+        {
+          "variantId": "42342916980822",
+          "sku": "F-OWTR-WLB-BLZ-OV-LTPLD-2",
+          "colorCode": "#d8d4cd",
+          "colorName": "Glen Plaid",
+          "size": "2",
+          "price": 3870000,
+          "stock": 13
+        },
+        {
+          "variantId": "42342917013590",
+          "sku": "F-OWTR-WLB-BLZ-OV-LTPLD-4",
+          "colorCode": "#d8d4cd",
+          "colorName": "Glen Plaid",
+          "size": "4",
+          "price": 3870000,
+          "stock": 7
+        },
+        {
+          "variantId": "42342917046358",
+          "sku": "F-OWTR-WLB-BLZ-OV-LTPLD-6",
+          "colorCode": "#d8d4cd",
+          "colorName": "Glen Plaid",
+          "size": "6",
+          "price": 3870000,
+          "stock": 6
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-outerwear",
+        "productPage": "https://www.everlane.com/products/womens-wool-oversized-blazer-glenplaid",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/839cca4c_c008.jpg?v=1753411456",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/1b10777b_526a.jpg?v=1753411456"
+        ]
+      }
+    },
+    {
+      "productId": "7539337723990",
+      "handle": "womens-day-glove-black",
+      "name": "The Day Glove in Narrow Fit — Black",
+      "category": "Giày",
+      "categorySlug": "giay",
+      "price": 2290000,
+      "description": "The Day Glove is made of buttery soft leather that molds to your foot for a perfect, custom fit. With features like a back pull tab, side vents, a rubber sole, and a cushioned insole, it's truly up for anything.",
+      "image": "/fashion/giay-womens-day-glove-black-01.jpg",
+      "imageAlt": "/fashion/giay-womens-day-glove-black-02.jpg",
+      "colors": [
+        "Black"
+      ],
+      "variants": [
+        {
+          "variantId": "42242584543318",
+          "sku": "F-FTWR-LTHR-GLV-BAL-BLK-5",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "5",
+          "price": 2290000,
+          "stock": 7
+        },
+        {
+          "variantId": "42242584576086",
+          "sku": "F-FTWR-LTHR-GLV-BAL-BLK-5H",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "5.5",
+          "price": 2290000,
+          "stock": 16
+        },
+        {
+          "variantId": "42242584608854",
+          "sku": "F-FTWR-LTHR-GLV-BAL-BLK-6",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "6",
+          "price": 2290000,
+          "stock": 15
+        },
+        {
+          "variantId": "42242584641622",
+          "sku": "F-FTWR-LTHR-GLV-BAL-BLK-6H",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "6.5",
+          "price": 2290000,
+          "stock": 14
+        },
+        {
+          "variantId": "42242584674390",
+          "sku": "F-FTWR-LTHR-GLV-BAL-BLK-7",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "7",
+          "price": 2290000,
+          "stock": 8
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-shoes",
+        "productPage": "https://www.everlane.com/products/womens-day-glove-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/3a7aecf6_de85.jpg?v=1753411433",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/307f19ac_b9b3.jpg?v=1753411433"
+        ]
+      }
+    },
+    {
+      "productId": "7539337855062",
+      "handle": "womens-day-glove-tan",
+      "name": "The Day Glove in Narrow Fit — Tan",
+      "category": "Giày",
+      "categorySlug": "giay",
+      "price": 2480000,
+      "description": "The Day Glove is made of buttery soft leather that molds to your foot for a perfect, custom fit. With features like a back pull tab, side vents, a rubber sole, and a cushioned insole, it's truly up for anything.",
+      "image": "/fashion/giay-womens-day-glove-tan-01.jpg",
+      "imageAlt": "/fashion/giay-womens-day-glove-tan-02.jpg",
+      "colors": [],
+      "variants": [
+        {
+          "variantId": "42242585952342",
+          "sku": "F-FTWR-LTHR-GLV-BAL-TAN.2-5",
+          "colorCode": "#d8d4cd",
+          "colorName": "Tan",
+          "size": "5",
+          "price": 2480000,
+          "stock": 16
+        },
+        {
+          "variantId": "42242585985110",
+          "sku": "F-FTWR-LTHR-GLV-BAL-TAN.2-5H",
+          "colorCode": "#d8d4cd",
+          "colorName": "Tan",
+          "size": "5.5",
+          "price": 2480000,
+          "stock": 15
+        },
+        {
+          "variantId": "42242586017878",
+          "sku": "F-FTWR-LTHR-GLV-BAL-TAN.2-6",
+          "colorCode": "#d8d4cd",
+          "colorName": "Tan",
+          "size": "6",
+          "price": 2480000,
+          "stock": 9
+        },
+        {
+          "variantId": "42242586050646",
+          "sku": "F-FTWR-LTHR-GLV-BAL-TAN.2-6H",
+          "colorCode": "#d8d4cd",
+          "colorName": "Tan",
+          "size": "6.5",
+          "price": 2480000,
+          "stock": 8
+        },
+        {
+          "variantId": "42242586083414",
+          "sku": "F-FTWR-LTHR-GLV-BAL-TAN.2-7",
+          "colorCode": "#d8d4cd",
+          "colorName": "Tan",
+          "size": "7",
+          "price": 2480000,
+          "stock": 7
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-shoes",
+        "productPage": "https://www.everlane.com/products/womens-day-glove-tan",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/0e6ca83b_8a9b.jpg?v=1753411442",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/872243ec_98f5.jpg?v=1753411443"
+        ]
+      }
+    },
+    {
+      "productId": "7539343458390",
+      "handle": "womens-renew-backpack-warm-quartz",
+      "name": "The ReNew Transit Backpack — Warm Quartz",
+      "category": "Phụ kiện",
+      "categorySlug": "phu-kien",
+      "price": 1590000,
+      "description": "The ReNew 15\" Transit Backpack features a 15\" exterior laptop pocket for easy TSA access, catch-all zip pockets for passports and tickets, interior slip pockets for magazines and notebooks, one interior and one exterior water bottle holder, a handy magnetic closure, and a pass-through strap that attaches to rolling luggage. Oh, and it’s made using 100% recycled polyester from recycled plastic bottles.* *The zipper sliders and some of the pulls are metal, but other zipper pulls are recycled polyester. The only new plastic is for the zipper coil (teeth), which is not made from recycled material—yet. We’ve eliminated 90% of the virgin plastic from our supply chain. Learn about what we’ve done—and the challenges ahead—on our Sustainability page.",
+      "image": "/fashion/phu-kien-womens-renew-backpack-warm-quartz-01.jpg",
+      "imageAlt": "/fashion/phu-kien-womens-renew-backpack-warm-quartz-02.jpg",
+      "colors": [],
+      "variants": [
+        {
+          "variantId": "42242632974422",
+          "sku": "U-BPCK-NYLE-FLP-LG-TPE-OS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Warm Quartz",
+          "size": "One Size",
+          "price": 1590000,
+          "stock": 11
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-all-accessories",
+        "productPage": "https://www.everlane.com/products/womens-renew-backpack-warm-quartz",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/0d817063_5256.jpg?v=1753411429",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/377993de_06ec.jpg?v=1753411429"
+        ]
+      }
+    },
+    {
+      "productId": "7539343556694",
+      "handle": "womens-renew-backpack-black",
+      "name": "The ReNew Transit Backpack — Black",
+      "category": "Phụ kiện",
+      "categorySlug": "phu-kien",
+      "price": 1780000,
+      "description": "The ReNew 15\" Transit Backpack features a 15\" exterior laptop pocket for easy TSA access, catch-all zip pockets for passports and tickets, interior slip pockets for magazines and notebooks, one interior and one exterior water bottle holder, a handy magnetic closure, and a pass-through strap that attaches to rolling luggage. Oh, and it’s made using 100% recycled polyester from recycled plastic bottles.* *The zipper sliders and some of the pulls are metal, but other zipper pulls are recycled polyester. The only new plastic is for the zipper coil (teeth), which is not made from recycled material—yet. We’ve eliminated 90% of the virgin plastic from our supply chain. Learn about what we’ve done—and the challenges ahead—on our Sustainability page.",
+      "image": "/fashion/phu-kien-womens-renew-backpack-black-01.jpg",
+      "imageAlt": "/fashion/phu-kien-womens-renew-backpack-black-02.jpg",
+      "colors": [
+        "Black"
+      ],
+      "variants": [
+        {
+          "variantId": "42242632876118",
+          "sku": "U-BPCK-NYLE-FLP-LG-BLK-OS",
+          "colorCode": "#d8d4cd",
+          "colorName": "Black",
+          "size": "One Size",
+          "price": 1780000,
+          "stock": 7
+        }
+      ],
+      "source": {
+        "retailer": "Everlane",
+        "sourcePage": "https://www.everlane.com/collections/womens-all-accessories",
+        "productPage": "https://www.everlane.com/products/womens-renew-backpack-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/19e7f3ad_7b10.jpg?v=1753411423",
+          "https://cdn.shopify.com/s/files/1/0623/7916/3734/files/240c2dc8_05cd.jpg?v=1753411422"
+        ]
+      }
+    }
+  ]
+}
