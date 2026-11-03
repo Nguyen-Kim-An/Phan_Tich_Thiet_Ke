@@ -1,0 +1,10 @@
+export type Variant = { variantId:string; sku:string; colorCode:string; colorName:string; size:string; price:number; stock:number };
+export type Product = { productId:string; name:string; category:string; price:number; description:string; image:string; match?:number; variants:Variant[] };
+
+export const products: Product[] = [
+  {productId:'30000000-0000-0000-0000-000000000001',name:'Sơ mi Linen Form Rộng',category:'Áo sơ mi',price:690000,description:'Linen nhẹ, phom thả và đường may tối giản.',image:'/products/linen-shirt.svg',variants:[{variantId:'40000000-0000-0000-0000-000000000001',sku:'SM-LIN-WHT-S',colorCode:'#F1F0EA',colorName:'Trắng ngà',size:'S',price:690000,stock:12},{variantId:'40000000-0000-0000-0000-000000000002',sku:'SM-LIN-WHT-M',colorCode:'#F1F0EA',colorName:'Trắng ngà',size:'M',price:690000,stock:8}]},
+  {productId:'30000000-0000-0000-0000-000000000002',name:'Quần Suông Studio',category:'Quần',price:890000,description:'Quần cạp cao, ly đứng dành cho nhịp sống thành thị.',image:'/products/studio-trousers.svg',variants:[{variantId:'40000000-0000-0000-0000-000000000003',sku:'Q-STU-BLK-M',colorCode:'#151515',colorName:'Đen',size:'M',price:890000,stock:16}]},
+  {productId:'30000000-0000-0000-0000-000000000003',name:'Váy Lụa No. 07',category:'Váy',price:1290000,description:'Váy midi cắt xéo, bề mặt lụa mờ.',image:'/products/silk-dress.svg',variants:[{variantId:'40000000-0000-0000-0000-000000000004',sku:'V-LUA-BLU-S',colorCode:'#8EA6C8',colorName:'Xanh khói',size:'S',price:1290000,stock:5}]},
+  {productId:'30000000-0000-0000-0000-000000000004',name:'Blazer Cấu Trúc Mềm',category:'Áo khoác',price:1590000,description:'Blazer vai mềm với tỷ lệ hiện đại.',image:'/products/soft-blazer.svg',variants:[{variantId:'40000000-0000-0000-0000-000000000005',sku:'BLZ-GRY-M',colorCode:'#777973',colorName:'Xám đá',size:'M',price:1590000,stock:3}]},
+];
+export const money = (value:number) => new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(value);

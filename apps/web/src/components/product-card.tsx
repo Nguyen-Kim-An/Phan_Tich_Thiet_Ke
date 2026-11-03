@@ -1,0 +1,2 @@
+import Link from 'next/link';import {Product,money} from '@/lib/catalog';
+export function ProductCard({product,index=0}:{product:Product;index?:number}){return <article className={`product-card product-card-${index%4}`}><Link href={`/product/${product.productId}`}><div className="product-image"><img src={product.image} alt={product.name}/>{product.match&&<span className="match">{product.match}% tương đồng</span>}</div><div className="product-meta"><div><h3>{product.name}</h3><p>{product.category}</p></div><strong>{money(product.price)}</strong></div></Link></article>}

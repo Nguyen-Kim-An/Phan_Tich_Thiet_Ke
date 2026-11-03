@@ -1,0 +1,15 @@
+{
+  "name": "smartfashion",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "concurrently -n web,api -c blue,green \"npm run dev -w @smartfashion/web\" \"npm run start:dev -w @smartfashion/api\"",
+    "build": "npm run build -w @smartfashion/api && npm run build -w @smartfashion/web",
+    "test": "npm run test -w @smartfashion/api",
+    "typecheck": "npm run typecheck -w @smartfashion/web && npm run typecheck -w @smartfashion/api"
+  },
+  "devDependencies": {"concurrently": "^9.1.2"},
+  "overrides": {"multer": "^2.5.0", "js-yaml": "^5.5.0"},
+  "engines": {"node": ">=20"}
+}

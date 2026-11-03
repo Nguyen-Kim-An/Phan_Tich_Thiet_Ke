@@ -1,0 +1,10 @@
+node_modules/
+.next/
+dist/
+.env
+*.log
+*.tsbuildinfo
+tmp/
+__pycache__/
+.pytest_cache/
+uploads/
