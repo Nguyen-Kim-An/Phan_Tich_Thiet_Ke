@@ -12,7 +12,7 @@
 
 ---
 
-## BẢNG TRA CỨU NHANH 16 BIỂU ĐỒ & LOẠI BIỂU ĐỒ TRONG VISUAL PARADIGM
+## BẢNG TRA CỨU NHANH 15 BIỂU ĐỒ & LOẠI BIỂU ĐỒ TRONG VISUAL PARADIGM
 
 | Mã Hình | Tên Biểu đồ (Theo đúng thứ tự Báo cáo PTIT) | Loại Biểu đồ chọn trong VP (`Diagram Type`) |
 |---|---|---|
@@ -21,11 +21,10 @@
 | **Figure 1.2** | Use Case Phân rã Module Tìm kiếm Đa phương thức & AI Stylist | **`Use Case Diagram`** |
 | **Figure 2.1** | Activity Diagram: Tìm kiếm Đa phương thức, Tra cứu Đơn & 4 Ngoại lệ | **`Activity Diagram`** |
 | **Figure 2.2** | Activity Diagram: AI Stylist Phối Costume (2 hướng) & Thử đồ Wearson AI | **`Activity Diagram`** |
-| **Figure 2.3** | Core Analysis Class Diagram: Mua sắm, Tìm kiếm & Đơn hàng *(Chuẩn mẫu 4.1)* | **`Class Diagram`** |
-| **Figure 2.4** | AI Stylist & Wearson Try-On Analysis Class Diagram *(Chuẩn mẫu 4.2)* | **`Class Diagram`** |
-| **Figure 2.5** | Analysis Class Diagram MVC/BCE (`in/out/sub` View + Control + Entity) | **`Class Diagram`** |
-| **Figure 2.6** | Analysis Sequence Diagram: Tìm kiếm Đa phương thức (Text / Voice / Image) | **`Sequence Diagram`** |
-| **Figure 2.7** | Analysis Sequence Diagram: Tư vấn AI Stylist & Thử đồ Wearson AI | **`Sequence Diagram`** |
+| **Figure 2.3** | Comprehensive Analysis Class Diagram: Mua sắm, Tìm kiếm & AI Stylist / Wearson Try-On *(Gộp Fig 2.3 & 2.4 chuẩn mẫu 4.1)* | **`Class Diagram`** |
+| **Figure 2.4** | Analysis Class Diagram MVC/BCE (`in/out/sub` View + Control + Entity) | **`Class Diagram`** |
+| **Figure 2.5** | Analysis Sequence Diagram: Tìm kiếm Đa phương thức (Text / Voice / Image) | **`Sequence Diagram`** |
+| **Figure 2.6** | Analysis Sequence Diagram: Tư vấn AI Stylist & Thử đồ Wearson AI | **`Sequence Diagram`** |
 | **Figure 3.1** | Layered Architecture & 4-Package Diagram (`interface`, `controller`, `DAO`, `model`) *(Chuẩn mẫu 4.6)* | **`Class Diagram`** hoặc **`Package Diagram`** |
 | **Figure 3.2** | Physical Data Model — ERD Crow's Foot 11 Bảng *(Chuẩn mẫu 4.3)* | **`Entity Relationship Diagram (ERD)`** |
 | **Figure 3.3** | Domain Layer Design Class Diagram (`<<ORM Persistable>>`) *(Chuẩn mẫu 4.5)* | **`Class Diagram`** |
@@ -247,22 +246,25 @@ Layout: Top-to-bottom flow across two swimlanes (Customer on left, System on rig
 
 ---
 
-## Prompt Figure 2.3 (Core Analysis Class Diagram — Chuẩn theo mẫu Figure 4.1 của bạn)
+## Prompt Figure 2.3 (Comprehensive Analysis Class Diagram — Gộp Core Mua sắm, Tìm kiếm & AI Stylist / Thử đồ Wearson AI)
 - **Loại biểu đồ chọn trong VP:** `Class Diagram`
+- **Mục đích:** Hợp nhất toàn bộ 15 lớp phân tích nghiệp vụ của hệ thống (Danh mục, Sản phẩm, Phân loại, Tìm kiếm Đa phương thức, Giỏ hàng, Đơn hàng, Phiên AI Stylist, Hồ sơ vóc dáng, Bộ phối Costume và Thử đồ Wearson AI) trên một sơ đồ tổng thể, chuẩn mẫu Figure 4.1.
 
 ```text
-Create a UML Analysis Class Diagram for the SmartFashion E-Commerce core catalog, multimodal search, cart, order lookup, and payment workflows.
+Create a UML Analysis Class Diagram for the complete SmartFashion E-Commerce, Multimodal Search, AI Stylist Consultation, and Wearson AI Virtual Try-On system.
+This diagram consolidates the core catalog, search query representations, shopping cart, customer orders, AI body profiling, multi-item costume composition, and virtual try-on into a unified business domain model.
 Classes carry pure business meaning (no technical IDs, no foreign keys, no attribute types, no Controller/Service/Repository).
+
 Classes and attributes/methods:
 1. User:
    - Attributes: fullName, email, phone, role, createdAt
-   - Operations: +login(), +logout(), +placeOrder(cart)
+   - Operations: +login(), +logout(), +startStylistSession(photo), +placeOrder(cart)
 2. Category:
    - Attributes: name, slug, description
    - Operations: +subtreeSlugs(), +assignParent(parentCategory)
 3. Product:
    - Attributes: name, handle, basePrice, description, soldCount, rating, imageUrl, status
-   - Operations: +isAvailable(), +matchHardFilters(filters), +updateRating(score)
+   - Operations: +isAvailable(), +matchHardFilters(filters), +primaryInStockVariant()
 4. ProductVariant:
    - Attributes: sku, colorCode, colorName, size, price, stockQuantity
    - Operations: +hasStock(quantity), +deductStock(quantity), +adjustStock(newStock)
@@ -284,6 +286,22 @@ Classes and attributes/methods:
 10. OrderItem:
     - Attributes: productNameSnapshot, colorNameSnapshot, sizeSnapshot, quantity, unitPrice
     - Operations: +lineAmount()
+11. StylistSession:
+    - Attributes: userPhotoUrl, inputMode, occasion, styleVibe, fitGoal, budgetLimit, voiceTranscript, createdAt
+    - Operations: +applyQuizAnswers(answers), +applyVoicePrompt(transcript), +selectCostume(outfit)
+12. BodyAnalysisProfile:
+    - Attributes: bodyShape, shoulderHipRatio, undertone, heightEstimate, recommendedFit, avoidNote
+    - Operations: +evaluateSilhouette(), +matchesFitGoal(fitGoal)
+13. Outfit:
+    - Attributes: title, styleTag, occasion, stylistNote, matchScore, matchBadges, totalPrice
+    - Operations: +calculateTotalPrice(), +isWithinBudget(limit), +verifyAllItemsInStock()
+14. OutfitItem:
+    - Attributes: slotRole, isMainItem
+    - Operations: +replaceVariant(variant)
+15. TryOnSession:
+    - Attributes: userImageUrl, resultImageUrl, status, fitConfidence, drapeNote, createdAt
+    - Operations: +synthesizeCompositePreview(), +toggleBeforeAfterComparison()
+
 Relationships and Multiplicities:
 - Category "0..1" -- "0..*" Category : parent of >
 - Category "1" -- "0..*" Product : categorizes >
@@ -297,43 +315,6 @@ Relationships and Multiplicities:
 - User "1" -- "0..*" Order : places >
 - Order "1" *-- "1..*" OrderItem : includes > (Composition)
 - OrderItem "0..*" --> "1" ProductVariant : locks stock of >
-Layout: Clean horizontal and vertical distribution, Product and ProductVariant at center, Search classes at top, Cart and Order classes at bottom, clear black and white style.
-```
-
----
-
-## Prompt Figure 2.4 (AI Stylist & Wearson Try-On Analysis Class Diagram — Chuẩn theo mẫu Figure 4.2 của bạn)
-- **Loại biểu đồ chọn trong VP:** `Class Diagram`
-
-```text
-Create a UML Analysis Class Diagram for the SmartFashion AI Stylist personal consultation, multi-item Costume mixing, and Wearson AI Virtual Try-On workflows (FR13 and FR14).
-All classes represent pure business concepts attached to a Customer's styling and try-on session.
-Classes and Operations:
-1. User:
-   - Attributes: fullName, email, role
-   - Operations: +startStylistSession(photo), +requestTryOn(outfit)
-2. StylistSession:
-   - Attributes: userPhotoUrl, inputMode, occasion, styleVibe, fitGoal, budgetLimit, voiceTranscript, createdAt
-   - Operations: +applyQuizAnswers(answers), +applyVoicePrompt(transcript), +selectCostume(outfit)
-3. BodyAnalysisProfile:
-   - Attributes: bodyShape, shoulderHipRatio, undertone, heightEstimate, recommendedFit, avoidNote
-   - Operations: +evaluateSilhouette(), +matchesFitGoal(fitGoal)
-4. Outfit:
-   - Attributes: title, styleTag, occasion, stylistNote, matchScore, matchBadges, totalPrice
-   - Operations: +calculateTotalPrice(), +isWithinBudget(limit), + verifyAllItemsInStock()
-5. OutfitItem:
-   - Attributes: slotRole, isMainItem
-   - Operations: +replaceVariant(variant)
-6. TryOnSession:
-   - Attributes: userImageUrl, resultImageUrl, status, fitConfidence, drapeNote, createdAt
-   - Operations: +synthesizeCompositePreview(), +toggleBeforeAfterComparison()
-7. Product:
-   - Attributes: name, category, basePrice, imageUrl
-   - Operations: +primaryInStockVariant()
-8. ProductVariant:
-   - Attributes: sku, colorName, size, price, stockQuantity
-   - Operations: +hasStock(quantity)
-Relationships and Multiplicities:
 - User "1" -- "0..*" StylistSession : requests >
 - StylistSession "1" *-- "1" BodyAnalysisProfile : analyzes > (Composition)
 - StylistSession "1" *-- "1..*" Outfit : recommends > (Composition)
@@ -342,12 +323,20 @@ Relationships and Multiplicities:
 - OutfitItem "0..*" --> "1" ProductVariant : defaults to >
 - StylistSession "1" -- "0..*" TryOnSession : previews in >
 - TryOnSession "0..*" --> "0..1" Outfit : wears >
-Layout: StylistSession at center, BodyAnalysisProfile to the left, Outfit and OutfitItem to the right, TryOnSession at bottom, Product and ProductVariant at bottom-right.
+- Outfit "0..1" ..> Cart : batch adds to >
+
+Layout:
+- Product and ProductVariant positioned vertically in the central spine.
+- Category placed directly above Product.
+- User and Multimodal Search cluster (QueryRepresentation, SearchResult) at top-left.
+- Shopping Cart and Order fulfillment cluster (Cart, CartItem, Order, OrderItem) at bottom-left.
+- AI Stylist and Virtual Try-On cluster (StylistSession, BodyAnalysisProfile, Outfit, OutfitItem, TryOnSession) on the right side.
+- Clean orthogonal lines, balanced distribution, clear black and white style.
 ```
 
 ---
 
-## Prompt Figure 2.5 (MVC / BCE Analysis Class Diagram — Chuẩn PTIT `in/out/sub`)
+## Prompt Figure 2.4 (MVC / BCE Analysis Class Diagram — Chuẩn PTIT `in/out/sub`)
 - **Loại biểu đồ chọn trong VP:** `Class Diagram`
 
 ```text
@@ -404,7 +393,7 @@ Layout: Boundary classes in top row, Control classes in middle row, Orchestrator
 
 ---
 
-## Prompt Figure 2.6 (Multimodal Search Analysis Sequence Diagram)
+## Prompt Figure 2.5 (Multimodal Search Analysis Sequence Diagram)
 - **Loại biểu đồ chọn trong VP:** `Sequence Diagram`
 
 ```text
@@ -441,7 +430,7 @@ Interactions (Numbered):
 
 ---
 
-## Prompt Figure 2.7 (AI Stylist & Wearson AI Try-On Analysis Sequence Diagram)
+## Prompt Figure 2.6 (AI Stylist & Wearson AI Try-On Analysis Sequence Diagram)
 - **Loại biểu đồ chọn trong VP:** `Sequence Diagram`
 
 ```text
