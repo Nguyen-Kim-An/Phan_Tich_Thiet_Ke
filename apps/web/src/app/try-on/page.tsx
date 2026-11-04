@@ -12,7 +12,6 @@ import {
   DecartRealtimeController,
   type DecartStatus,
 } from '@/services/decart-client';
-import { LiveMirrorFittingRenderer } from '@/services/virtual-fitting';
 
 const SAMPLE_MODELS = [
   {
@@ -65,8 +64,6 @@ export default function TryOnPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mirrorRendererRef = useRef<LiveMirrorFittingRenderer | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const decartControllerRef = useRef<DecartRealtimeController | null>(null);
 
@@ -111,13 +108,7 @@ export default function TryOnPage() {
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
-        if (canvasRef.current && videoRef.current) {
-          if (!mirrorRendererRef.current) {
-            mirrorRendererRef.current = new LiveMirrorFittingRenderer(canvasRef.current);
-          }
-          mirrorRendererRef.current.start(videoRef.current, product.image);
+          videoRef.current.play();
         }
       }, 100);
 
@@ -152,7 +143,6 @@ export default function TryOnPage() {
   };
 
   const stopRealtimeCamera = () => {
-    mirrorRendererRef.current?.stop();
     if (videoRef.current?.srcObject) {
       (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
     }
@@ -217,10 +207,6 @@ export default function TryOnPage() {
                 autoPlay
                 playsInline
                 muted
-                className="hidden"
-              />
-              <canvas
-                ref={canvasRef}
                 className="w-full h-full object-cover"
               />
 
@@ -251,11 +237,7 @@ export default function TryOnPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (canvasRef.current) {
-                      setUserPhoto(canvasRef.current.toDataURL('image/jpeg', 0.94));
-                      stopRealtimeCamera();
-                      runDecartTryOnJob();
-                    } else if (videoRef.current) {
+                    if (videoRef.current) {
                       const canvas = document.createElement('canvas');
                       canvas.width = videoRef.current.videoWidth || 720;
                       canvas.height = videoRef.current.videoHeight || 960;
@@ -484,7 +466,6 @@ export default function TryOnPage() {
                     onClick={() => {
                       setProduct(p);
                       setTryOnResult(null);
-                      mirrorRendererRef.current?.setGarment(p.image);
                       // BƯỚC 4: Bắn lệnh setImage mới qua Data Channel mà KHÔNG cần ngắt camera
                       if (decartControllerRef.current) {
                         decartControllerRef.current.setImage(

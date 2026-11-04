@@ -17,10 +17,6 @@ import {
   startContinuousVoiceSession,
   type ContinuousSpeechController,
 } from '@/services/interfaces';
-import {
-  LiveMirrorFittingRenderer,
-  synthesizePhotoTryOn,
-} from '@/services/virtual-fitting';
 
 // Guided styling criteria
 const STYLING_CRITERIA = {
@@ -149,8 +145,6 @@ export default function OutfitsPage() {
   const [showOriginalCompare, setShowOriginalCompare] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mirrorRendererRef = useRef<LiveMirrorFittingRenderer | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const decartControllerRef = useRef<DecartRealtimeController | null>(null);
   const tryOnSectionRef = useRef<HTMLDivElement>(null);
@@ -274,9 +268,6 @@ export default function OutfitsPage() {
     // Cập nhật trang phục đang thử
     setTryOnGarment(item);
 
-    // Tự động khoác món đồ mới lên gương Live Mirror ngay lập tức
-    mirrorRendererRef.current?.setGarment(item.image);
-
     // BƯỚC 4: Bắn lệnh setImage mới qua Data Channel mà KHÔNG cần kết nối lại camera
     if (decartControllerRef.current) {
       decartControllerRef.current.setImage(item.image, `Wearing ${item.name}`);
@@ -323,19 +314,10 @@ export default function OutfitsPage() {
         audio: false,
       });
       setCameraActive(true);
-
-      const garmentImg = tryOnGarment?.image || selectedTop?.image || '';
-
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
-        if (canvasRef.current && videoRef.current) {
-          if (!mirrorRendererRef.current) {
-            mirrorRendererRef.current = new LiveMirrorFittingRenderer(canvasRef.current);
-          }
-          mirrorRendererRef.current.start(videoRef.current, garmentImg);
+          videoRef.current.play();
         }
       }, 100);
 
@@ -359,6 +341,7 @@ export default function OutfitsPage() {
         );
       }
 
+      const garmentImg = tryOnGarment?.image || selectedTop?.image || '';
       const prompt = `Virtual try-on of ${tryOnGarment?.name || 'outfit'}, natural fabric drape and realistic fit`;
       await decartControllerRef.current.connect(stream, garmentImg, prompt);
     } catch {
@@ -369,7 +352,6 @@ export default function OutfitsPage() {
   };
 
   const stopRealtimeWebcam = () => {
-    mirrorRendererRef.current?.stop();
     if (videoRef.current?.srcObject) {
       (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
     }
@@ -381,24 +363,19 @@ export default function OutfitsPage() {
 
   // Capture snapshot from webcam
   const captureSnapshot = () => {
-    if (canvasRef.current) {
-      const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.94);
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 720;
+    canvas.height = video.videoHeight || 960;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
       setUserBodyPhoto(dataUrl);
       stopRealtimeWebcam();
+      // Run Decart try-on job with snapshot
       runDecartPhotoTryOn(dataUrl);
-    } else if (videoRef.current) {
-      const video = videoRef.current;
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 720;
-      canvas.height = video.videoHeight || 960;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-        setUserBodyPhoto(dataUrl);
-        stopRealtimeWebcam();
-        runDecartPhotoTryOn(dataUrl);
-      }
     }
   };
 
@@ -973,7 +950,6 @@ export default function OutfitsPage() {
                     type="button"
                     onClick={() => {
                       setTryOnGarment(item);
-                      mirrorRendererRef.current?.setGarment(item.image);
                       if (decartControllerRef.current) {
                         decartControllerRef.current.setImage(
                           item.image,
@@ -1012,10 +988,6 @@ export default function OutfitsPage() {
                     autoPlay
                     playsInline
                     muted
-                    className="hidden"
-                  />
-                  <canvas
-                    ref={canvasRef}
                     className="w-full h-full object-cover"
                   />
 
