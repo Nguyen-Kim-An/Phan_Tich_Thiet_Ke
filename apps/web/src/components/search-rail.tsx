@@ -111,7 +111,7 @@ export function SearchRail({ compact = false }: { compact?: boolean }) {
   const placeholderText = {
     text: 'Tìm sản phẩm (“áo sơ mi trắng dưới 2 triệu”) hoặc nhập mã đơn (“SF-2026-0038”)…',
     image: 'Tải ảnh trang phục để chọn vùng đồ cần tìm tương đồng…',
-    voice: 'Đặt con trỏ tại đây và giữ Ctrl+Space (Amical AI Voice) hoặc bấm nút Thu âm…',
+    voice: 'Đặt con trỏ tại đây và giữ Ctrl+Space (Mumble Voice) hoặc bấm nút Thu âm…',
   }[mode];
 
   return (
@@ -268,7 +268,7 @@ export function SearchRail({ compact = false }: { compact?: boolean }) {
                 <span className="font-medium text-base-content">
                   {isRecording
                     ? 'Đang thu âm liên tục qua Micro — Hãy nói nguyên câu, sau đó bấm "Dừng thu âm" hoặc "Tìm kiếm"'
-                    : 'Đặt con trỏ vào ô tìm kiếm và giữ Ctrl + Space để nói qua Amical AI Voice, hoặc bấm nút "Thu âm"'}
+                    : 'Đặt con trỏ vào ô tìm kiếm và giữ Ctrl + Space để nói qua Mumble Voice, hoặc bấm nút "Thu âm"'}
                 </span>
               </div>
               {inQuery && (

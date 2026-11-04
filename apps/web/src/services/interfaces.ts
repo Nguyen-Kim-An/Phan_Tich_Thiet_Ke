@@ -5,7 +5,7 @@
  * Implements Interface Realization (<|..):
  * - QueryParser <|.. RuleQueryParser, LlmQueryParser
  * - ImageEncoder <|.. ColorHistogramEncoder, ClipImageEncoder
- * - SpeechToText <|.. AmicalVoiceAdapter, WebSpeechAdapter
+ * - SpeechToText <|.. MumbleVoiceAdapter, WebSpeechAdapter
  * - TryOnEngine <|.. WearsonTryOnAdapter
  */
 
@@ -276,26 +276,18 @@ export interface SpeechToText {
   transcribe(audio?: Blob | null, langHint?: string): Promise<string>;
 }
 
-export class AmicalVoiceAdapter implements SpeechToText {
-  public readonly appPath: string =
-    'C:\\Users\\Admin\\AppData\\Local\\Amical\\Amical.exe';
-  public readonly pushToTalkHotkey: string = 'Ctrl+Space';
-  public readonly toggleRecordingHotkey: string = 'Ctrl+Win+Space';
-  public readonly engine: string = 'Whisper Cloud / Amical AI';
-  public readonly language: string = 'vi';
+export class MumbleVoiceAdapter implements SpeechToText {
+  public readonly hotkey: string = 'Ctrl+Space';
+  public readonly mode: string = 'hold';
+  public readonly insertMode: string = 'paste';
 
   public async transcribe(
     _audio?: Blob | null,
     _langHint: string = 'vi'
   ): Promise<string> {
-    // Amical operates natively at the OS layer via WindowsHelper, transcribing Vietnamese
-    // with Whisper Cloud and directly typing/pasting text into the focused web input.
     return '';
   }
 }
-
-// Backward-compatibility alias
-export { AmicalVoiceAdapter as MumbleVoiceAdapter };
 
 export interface ContinuousSpeechController {
   stop: () => void;

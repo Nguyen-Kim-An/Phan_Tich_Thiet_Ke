@@ -59,8 +59,8 @@ Elements:
 3. External Systems (Out of Scope / Third-Party Services):
    - Gemini & Decart AI API [External System]:
      Description: Multimodal generative AI cloud services. Analyzes user full-body photos, classifies body shape, coordinates 3 matching outfits, and synthesizes photorealistic virtual try-on images.
-   - Amical AI & Web Speech STT [External System]:
-     Description: Real-time high-speed speech-to-text service (Desktop app at C:\Users\Admin\AppData\Local\Amical powered by Whisper Cloud). Converts spoken Vietnamese voice into textual search queries and styling preferences with near-instant latency.
+   - Mumble Voice & Web Speech STT [External System]:
+     Description: Real-time streaming speech-to-text service. Converts continuous spoken Vietnamese voice into textual search queries and styling preferences.
    - Online Payment Gateways (VNPay / MoMo) [External System]:
      Description: Third-party banking and e-wallet payment providers. Processes secure transactions via ATM/Visa/QR and returns signed payment confirmation tokens.
    - OpenStreetMap & Hanoi GIS Routing Engine [External System]:
@@ -72,7 +72,7 @@ Interactions and Protocols:
 - Customer --> SmartFashion Platform (MaisonAI) : "Browses catalog, searches via text/voice/image, consults AI stylist, tries on virtual outfits, orders goods [HTTPS/Browser]"
 - Administrator --> SmartFashion Platform (MaisonAI) : "Manages product catalog, categories, orders, and monitors dispatch telemetry [HTTPS/Browser]"
 - SmartFashion Platform (MaisonAI) --> Gemini & Decart AI API : "Sends body photo and styling desires; receives body analysis, outfit recommendations, and try-on imagery [JSON/HTTPS REST API]"
-- SmartFashion Platform (MaisonAI) --> Amical AI & Web Speech STT : "Streams microphone audio / receives desktop dictation text [Native OS Paste / Speech API]"
+- SmartFashion Platform (MaisonAI) --> Mumble Voice & Web Speech STT : "Streams microphone audio; receives transcribed Vietnamese text [WebSockets / Speech API]"
 - SmartFashion Platform (MaisonAI) --> Online Payment Gateways (VNPay / MoMo) : "Submits payment checkout requests; receives payment status webhooks [HTTPS / Webhooks]"
 - SmartFashion Platform (MaisonAI) --> OpenStreetMap & Hanoi GIS Routing Engine : "Fetches Hanoi map tiles, arterial road coordinates, and calculates real street distances to PTIT [HTTPS / Tile Server API]"
 - SmartFashion Platform (MaisonAI) --> Fleet Dispatch & Logistics Service : "Dispatches delivery tasks; receives real-time GPS telemetry and delivery completion confirmations [HTTPS / SSE / WebSockets]"
@@ -80,7 +80,7 @@ Interactions and Protocols:
 Layout:
 - Customer at top-left, Administrator at top-right.
 - SmartFashion Platform (MaisonAI) centered in the middle as the core blue system.
-- Gemini & Decart AI API and Amical AI STT positioned on the left side.
+- Gemini & Decart AI API and Mumble Voice STT positioned on the left side.
 - Online Payment Gateways, OpenStreetMap GIS Engine, and Fleet Dispatch Service positioned on the right and bottom sides.
 - Standard C4 color scheme: internal system in primary blue, external systems in neutral gray, human actors in navy/slate blue.
 ```
@@ -146,7 +146,7 @@ Actor:
 Use Cases inside system boundary "Multimodal Search & AI Stylist Studio":
 1. Search Product
 2. Search by Keyword
-3. Search by Voice (Amical AI Voice)
+3. Search by Voice (Mumble Voice)
 4. Search by Image
 5. Select Garment Region on Image
 6. Consult AI Stylist
@@ -162,7 +162,7 @@ Relationships:
 - Customer -- Consult AI Stylist
 - Customer -- Search Order by Code
 - Search by Keyword --|> Search Product : Generalization
-- Search by Voice (Amical AI Voice) --|> Search Product : Generalization
+- Search by Voice (Mumble Voice) --|> Search Product : Generalization
 - Search by Image --|> Search Product : Generalization
 - Search by Image ..> Select Garment Region on Image : <<include>>
 - Consult AI Stylist ..> Capture Full-Body Photo : <<include>>
@@ -189,7 +189,7 @@ Swimlanes and Activities:
    - Open Search Interface
    - Decision Node: "Search mode?" with 3 outgoing branches:
      a) [Keyword]: Enter text query or order code
-     b) [Voice]: Speak via Microphone / Amical AI Voice (Ctrl+Space)
+     b) [Voice]: Speak via Microphone / Mumble Voice (Ctrl+Space)
      c) [Image]: Upload outfit photo -> Select detected garment region (or full image)
    - Decision Node: "Apply UI Filter Override? (Exception 3)"
    - Click Product to View Details (FR5)
@@ -228,7 +228,7 @@ Swimlanes and Activities:
    - Capture live full-body photo via Webcam (or upload photo)
    - Decision Node: "Choose styling intent input method?" with 2 branches:
      a) [Path 1: Guided Quiz]: Answer 4 preset multiple-choice questions (Occasion, Style Vibe, Body Fit Priority, Budget)
-     b) [Path 2: Voice Mic]: Hold Ctrl+Space (Amical AI Voice) or click Mic to speak styling desires in Vietnamese
+     b) [Path 2: Voice Mic]: Hold Ctrl+Space (Mumble Voice) or click Mic to speak styling desires in Vietnamese
    - Review 3 recommended Costumes
    - Decision Node: "Virtual Try-On with Wearson AI? (FR14)"
    - Decision Node: "Add entire Costume to Cart?"
@@ -447,7 +447,7 @@ Participants (Left to Right):
 9. Control: WearsonTryOnService
 10. Boundary: TryOnPreviewView
 Interactions (Numbered):
-1. Customer -> StylistStudioUI: 1. Capture live body photo & submit 4 quiz answers (or speak via Amical AI Voice Mic)
+1. Customer -> StylistStudioUI: 1. Capture live body photo & submit 4 quiz answers (or speak via Mumble Voice Mic)
 2. StylistStudioUI -> StylistController: 2. Send styling consultation request
 3. StylistController -> StylistOrchestrator: 3. Coordinate AI Stylist recommendation
 4. StylistOrchestrator -> BodyAnalysisService: 4. Analyze body shape, proportions, and undertone from photo
@@ -666,10 +666,9 @@ Strategy Interfaces and Concrete Implementations (Interface Realization <|..):
    + encode(image: File, box: BoundingBox, hintText: String): Real[]
 7. SpeechToText <<interface>>:
    + transcribe(audio: Blob, langHint: String): String
-8. AmicalVoiceAdapter:
-   - appPath: String
-   - pushToTalkHotkey: String
-   - engine: String
+8. MumbleVoiceAdapter:
+   - hotkey: String
+   - mode: String
    + transcribe(audio: Blob, langHint: String): String
 9. WebSpeechAdapter:
    + transcribe(audio: Blob, langHint: String): String
@@ -753,7 +752,7 @@ Relationships:
 - LlmQueryParser ..|> QueryParser : Realization
 - ColorHistogramEncoder ..|> ImageEncoder : Realization
 - ClipImageEncoder ..|> ImageEncoder : Realization
-- AmicalVoiceAdapter ..|> SpeechToText : Realization
+- MumbleVoiceAdapter ..|> SpeechToText : Realization
 - WebSpeechAdapter ..|> SpeechToText : Realization
 - WearsonTryOnAdapter ..|> TryOnEngine : Realization
 - JsonProductRepository ..|> ProductRepository : Realization

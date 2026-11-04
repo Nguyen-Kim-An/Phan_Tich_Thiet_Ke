@@ -71,7 +71,7 @@ export default function OutfitsPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Step 2: Input Mode ('quiz' = 4 guided questions | 'voice' = Amical AI Voice / Continuous Mic)
+  // Step 2: Input Mode ('quiz' = 4 guided questions | 'voice' = Mumble Voice / Continuous Mic)
   const [inputMode, setInputMode] = useState<'quiz' | 'voice'>('quiz');
   const [inQuizAnswers, setInQuizAnswers] = useState({
     occasion: QUIZ_QUESTIONS.occasions[0],
@@ -250,7 +250,7 @@ export default function OutfitsPage() {
         <p className="text-sm sm:text-base text-base-content/70 leading-relaxed">
           Chụp ảnh trực tiếp qua Camera để phân tích vóc dáng, sau đó chọn{' '}
           <strong>Trả lời 4 câu hỏi định hướng</strong> hoặc{' '}
-          <strong>Bật Mic nói trực tiếp / dùng Amical AI Voice (Ctrl + Space)</strong>{' '}
+          <strong>Bật Mic nói trực tiếp / dùng Mumble Voice (Ctrl + Space)</strong>{' '}
           để nhận 3 bộ trang phục phối sẵn từ kho 334 thiết kế và ướm thử trực tiếp với{' '}
           <strong>Wearson AI</strong>.
         </p>
@@ -451,7 +451,7 @@ export default function OutfitsPage() {
                 }`}
               >
                 <Icon name="mic" size={14} />
-                <span>Hướng 2: Giọng nói / Amical AI</span>
+                <span>Hướng 2: Giọng nói / Mumble Voice</span>
               </button>
             </div>
           </div>
@@ -566,7 +566,7 @@ export default function OutfitsPage() {
             </div>
           ) : (
             /* =============================================================== */
-            /* HƯỚNG 2: BẬT MIC NÓI LIÊN TỤC HOẶC DÙNG AMICAL AI VOICE         */
+            /* HƯỚNG 2: BẬT MIC NÓI LIÊN TỤC HOẶC DÙNG MUMBLE VOICE             */
             /* =============================================================== */
             <div className="space-y-4">
               <div className="alert alert-info alert-soft text-xs flex items-center justify-between">
@@ -577,10 +577,10 @@ export default function OutfitsPage() {
                     }`}
                   />
                   <span>
-                    <strong>Hỗ trợ Amical AI Voice Desktop & Thu âm liên tục:</strong>{' '}
+                    <strong>Hỗ trợ Mumble Voice Desktop & Thu âm liên tục:</strong>{' '}
                     Đặt con trỏ vào ô văn bản rồi giữ phím{' '}
                     <kbd className="kbd kbd-xs">Ctrl</kbd>+
-                    <kbd className="kbd kbd-xs">Space</kbd> để nói qua Amical (tốc độ cao, nhận diện Whisper tiếng Việt cực chuẩn), hoặc bấm nút{' '}
+                    <kbd className="kbd kbd-xs">Space</kbd> để nói qua Mumble Voice, hoặc bấm nút{' '}
                     <strong>Bắt đầu thu âm Micro</strong> để nói nhiều câu liên tục (chỉ dừng khi bạn bấm Dừng thu âm).
                   </span>
                 </div>
@@ -625,7 +625,7 @@ export default function OutfitsPage() {
                   rows={4}
                   value={inVoicePrompt}
                   onChange={(e) => setInVoicePrompt(e.target.value)}
-                  placeholder="Đặt con trỏ tại đây và giữ Ctrl+Space để nói qua Amical AI Voice, hoặc bấm nút Bắt đầu thu âm Micro để nói trực tiếp..."
+                  placeholder="Đặt con trỏ tại đây và giữ Ctrl+Space để nói qua Mumble Voice, hoặc bấm nút Bắt đầu thu âm Micro để nói trực tiếp..."
                   className="textarea textarea-bordered w-full text-sm leading-relaxed"
                 />
               </div>
