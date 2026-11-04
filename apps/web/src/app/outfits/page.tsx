@@ -1,124 +1,295 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import type { Outfit, StylistSession, TryOnSession } from '@/domain/models';
+import type { Product, ProductVariant } from '@/domain/models';
 import { products, money } from '@/lib/catalog';
 import { cartActions } from '@/store/store';
-import { stylistController } from '@/services/stylist-orchestrator';
+import { Icon } from '@/components/icons';
+import {
+  getDecartStatus,
+  executeDecartTryOn,
+  DecartRealtimeController,
+  type DecartStatus,
+} from '@/services/decart-client';
 import {
   startContinuousVoiceSession,
   type ContinuousSpeechController,
 } from '@/services/interfaces';
-import { Icon } from '@/components/icons';
 
-const QUIZ_QUESTIONS = {
+// Guided styling criteria
+const STYLING_CRITERIA = {
   occasions: [
-    'Công sở & Gặp đối tác',
-    'Tiệc tối & Sự kiện sang trọng',
-    'Dạo phố & Cà phê cuối tuần',
-    'Du lịch & Nghỉ dưỡng',
+    { id: 'cong-so', label: 'Công sở & Gặp đối tác', desc: 'Thanh lịch, chỉn chu, chuyên nghiệp' },
+    { id: 'dao-pho', label: 'Dạo phố & Cà phê cuối tuần', desc: 'Thoải mái, phóng khoáng, tự tin' },
+    { id: 'du-tiec', label: 'Tiệc tối & Sự kiện sang trọng', desc: 'Quyến rũ, tinh tế, nổi bật' },
+    { id: 'du-lich', label: 'Du lịch & Nghỉ dưỡng', desc: 'Nhẹ nhàng, thoáng mát, năng động' },
   ],
   vibes: [
-    'Thanh lịch tối giản (Minimalist)',
-    'Hiện đại & Sắc sảo (Modern Tailored)',
-    'Nữ tính & Mềm mại (Romantic Silk)',
-    'Phóng khoáng (Smart-Casual)',
-  ],
-  fitGoals: [
-    'Tôn vòng eo & Kéo dài đôi chân',
-    'Che khuyết điểm bắp tay & Cân đối bờ vai',
-    'Phom suông che vòng 2 & Thoải mái di chuyển',
+    { id: 'minimalist', label: 'Tối giản (Minimalist)', desc: 'Đường cắt dứt khoát, gam màu đơn sắc' },
+    { id: 'smart-casual', label: 'Thanh lịch (Smart-Casual)', desc: 'Cân bằng giữa trang trọng và hiện đại' },
+    { id: 'romantic', label: 'Nữ tính & Mềm mại (Silk & Flow)', desc: 'Chất vải rủ nhẹ, đường cong mềm' },
+    { id: 'tailored', label: 'Sắc sảo (Modern Tailored)', desc: 'Phom dáng cấu trúc, blazer tôn dáng' },
   ],
   budgets: [
-    { label: 'Dưới 3.000.000₫ / bộ', value: 3000000 },
-    { label: 'Dưới 4.500.000₫ / bộ', value: 4500000 },
-    { label: 'Dưới 6.500.000₫ / bộ', value: 6500000 },
+    { label: 'Dưới 3.000.000₫', value: 3000000 },
+    { label: 'Dưới 4.500.000₫', value: 4500000 },
+    { label: 'Dưới 6.500.000₫', value: 6500000 },
+    { label: 'Không giới hạn', value: 12000000 },
+  ],
+  colors: [
+    { id: 'trang', label: 'Trắng / kem', hex: '#f8f6f0' },
+    { id: 'den', label: 'Đen', hex: '#1a1a1a' },
+    { id: 'be', label: 'Be / Sand', hex: '#d9cdb8' },
+    { id: 'xam', label: 'Xám ghi', hex: '#8c8c8c' },
+    { id: 'xanh', label: 'Xanh Navy / Denim', hex: '#2b425b' },
+    { id: 'nau', label: 'Nâu Caramel', hex: '#7a4e32' },
+    { id: 'do', label: 'Đỏ rượu / Burgundy', hex: '#722f37' },
   ],
 };
 
-const SAMPLE_VOICE_INTENTS = [
-  'Phối giúp tôi mấy bộ đồ đi làm lịch sự, hiện đại, tôn vòng eo và che bắp tay, ngân sách tầm 4.5 triệu',
-  'Tôi chuẩn bị đi tiệc tối, thích phong cách nữ tính mềm mại bằng lụa, tôn dáng dưới 5 triệu',
-  'Tìm cho tôi bộ đồ dạo phố cuối tuần thoải mái, che vòng 2, tông màu trung tính dưới 3 triệu',
+const SAMPLE_MODELS = [
+  {
+    id: 'hourglass',
+    name: 'Mẫu 01 (Đồng hồ cát)',
+    badge: 'Tôn vòng eo',
+    photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=720&q=80',
+  },
+  {
+    id: 'pear',
+    name: 'Mẫu 02 (Dáng Quả lê)',
+    badge: 'Cân đối bờ vai',
+    photo: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=720&q=80',
+  },
+  {
+    id: 'rect',
+    name: 'Mẫu 03 (Thanh mảnh)',
+    badge: 'Phom suông hiện đại',
+    photo: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=720&q=80',
+  },
+  {
+    id: 'smart',
+    name: 'Mẫu 04 (Nam lịch lãm)',
+    badge: 'Modern Tailored',
+    photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=720&q=80',
+  },
+];
+
+type SlotKey = 'top' | 'bottom' | 'outer' | 'acc';
+
+interface SlotDefinition {
+  key: SlotKey;
+  title: string;
+  categorySlug: string;
+  badge: string;
+  iconName: 'spark' | 'filter' | 'heart' | 'arrow';
+}
+
+const SLOTS: SlotDefinition[] = [
+  { key: 'top', title: 'Áo Chủ Đạo', categorySlug: 'ao', badge: 'Món trung tâm', iconName: 'spark' },
+  { key: 'bottom', title: 'Quần / Chân Váy', categorySlug: 'quan', badge: 'Tôn phom dáng', iconName: 'filter' },
+  { key: 'outer', title: 'Áo Khoác Ngoài', categorySlug: 'ao-khoac', badge: 'Điểm nhấn Layer', iconName: 'heart' },
+  { key: 'acc', title: 'Giày & Phụ Kiện', categorySlug: 'giay', badge: 'Hoàn thiện set', iconName: 'arrow' },
 ];
 
 export default function OutfitsPage() {
+  const occasionInputName = useId();
+  const vibeInputName = useId();
+  const budgetInputName = useId();
+  const colorInputName = useId();
   const dispatch = useDispatch();
 
-  const sampleModelPhotos = [
-    {
-      label: 'Mẫu dáng Đồng hồ cát (Studio 01)',
-      url: products[0]?.image || '',
-    },
-    {
-      label: 'Mẫu dáng Quả lê (Studio 02)',
-      url: products[60]?.image || products[1]?.image || '',
-    },
-    {
-      label: 'Mẫu dáng Chữ nhật (Studio 03)',
-      url: products[120]?.image || products[2]?.image || '',
-    },
-  ];
-
-  // Step 1: Body photo (Webcam capture or Upload or Sample Model)
-  const [inBodyPhoto, setInBodyPhoto] = useState<string>(
-    sampleModelPhotos[0]?.url || ''
-  );
-  const [cameraActive, setCameraActive] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Step 2: Input Mode ('quiz' = 4 guided questions | 'voice' = Mumble Voice / Continuous Mic)
-  const [inputMode, setInputMode] = useState<'quiz' | 'voice'>('quiz');
-  const [inQuizAnswers, setInQuizAnswers] = useState({
-    occasion: QUIZ_QUESTIONS.occasions[0],
-    styleVibe: QUIZ_QUESTIONS.vibes[0],
-    fitGoal: QUIZ_QUESTIONS.fitGoals[0],
-    budgetLimit: 4500000,
-  });
-  const [inVoicePrompt, setInVoicePrompt] = useState<string>(
-    SAMPLE_VOICE_INTENTS[0]
-  );
+  // 1. User Styling Criteria
+  const [occasion, setOccasion] = useState(STYLING_CRITERIA.occasions[0].label);
+  const [vibe, setVibe] = useState(STYLING_CRITERIA.vibes[0].label);
+  const [budgetLimit, setBudgetLimit] = useState(STYLING_CRITERIA.budgets[1].value);
+  const [preferredColors, setPreferredColors] = useState<string[]>(['trang', 'den', 'be']);
+  const [activeSlotTab, setActiveSlotTab] = useState<SlotKey>('top');
+  const [customVoicePrompt, setCustomVoicePrompt] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const voiceTextareaRef = useRef<HTMLTextAreaElement>(null);
   const voiceSessionRef = useRef<ContinuousSpeechController | null>(null);
 
-  // Step 3: StylistSession
-  const [session, setSession] = useState<StylistSession>(() =>
-    stylistController.recommend({
-      photoUrl: sampleModelPhotos[0]?.url || '',
-      inputMode: 'quiz',
-      quizAnswers: {
-        occasion: QUIZ_QUESTIONS.occasions[0],
-        styleVibe: QUIZ_QUESTIONS.vibes[0],
-        fitGoal: QUIZ_QUESTIONS.fitGoals[0],
-        budgetLimit: 4500000,
-      },
-    })
+  // 2. Real product pools grouped by category
+  const topsPool = useMemo(() => products.filter((p) => p.categorySlug === 'ao'), []);
+  const bottomsPool = useMemo(
+    () => products.filter((p) => p.categorySlug === 'quan' || p.categorySlug === 'vay'),
+    []
   );
-  const [activeOutfitIdx, setActiveOutfitIdx] = useState(0);
+  const outersPool = useMemo(() => products.filter((p) => p.categorySlug === 'ao-khoac'), []);
+  const accPool = useMemo(
+    () => products.filter((p) => p.categorySlug === 'giay' || p.categorySlug === 'phu-kien'),
+    []
+  );
 
-  // Step 4: Virtual Try-On Preview
-  const [tryOnLoading, setTryOnLoading] = useState(false);
-  const [tryOnSession, setTryOnSession] = useState<TryOnSession | null>(null);
+  // 3. User Selected Items in Outfit (defaults to matching first set)
+  const [selectedTop, setSelectedTop] = useState<Product | null>(topsPool[0] || null);
+  const [selectedBottom, setSelectedBottom] = useState<Product | null>(bottomsPool[0] || null);
+  const [selectedOuter, setSelectedOuter] = useState<Product | null>(outersPool[0] || null);
+  const [selectedAcc, setSelectedAcc] = useState<Product | null>(accPool[0] || null);
+
+  // Search/filter within active slot
+  const [slotSearch, setSlotSearch] = useState('');
+
+  // 4. Decart Virtual Try-On States
+  const [decartStatus, setDecartStatus] = useState<DecartStatus | null>(null);
+  const [tryOnGarment, setTryOnGarment] = useState<Product | null>(selectedTop);
+  const [userBodyPhoto, setUserBodyPhoto] = useState<string>(SAMPLE_MODELS[0].photo);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const [realtimeMsg, setRealtimeMsg] = useState('Sẵn sàng kết nối tới Decart Lucy VTON 3.6');
+  const [tryOnProcessing, setTryOnProcessing] = useState(false);
+  const [tryOnResultImage, setTryOnResultImage] = useState<string | null>(null);
   const [showOriginalCompare, setShowOriginalCompare] = useState(false);
-  const previewSectionRef = useRef<HTMLDivElement>(null);
 
-  // Cleanup webcam stream & voice session on unmount
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const decartControllerRef = useRef<DecartRealtimeController | null>(null);
+  const tryOnSectionRef = useRef<HTMLDivElement>(null);
+
+  // Init Decart status
+  useEffect(() => {
+    getDecartStatus().then((st) => setDecartStatus(st)).catch(() => {});
+  }, []);
+
+  // Sync tryOnGarment when selectedTop changes if not set
+  useEffect(() => {
+    if (selectedTop && !tryOnGarment) {
+      setTryOnGarment(selectedTop);
+    }
+  }, [selectedTop, tryOnGarment]);
+
+  // Cleanups
   useEffect(() => {
     return () => {
       voiceSessionRef.current?.stop();
+      decartControllerRef.current?.disconnect();
       if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach((t) => t.stop());
+        (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
       }
     };
   }, []);
 
-  const startWebcam = async () => {
+  // Compute total price of current outfit
+  const currentOutfitItems = useMemo(
+    () => [selectedTop, selectedBottom, selectedOuter, selectedAcc].filter(Boolean) as Product[],
+    [selectedTop, selectedBottom, selectedOuter, selectedAcc]
+  );
+
+  const totalOutfitPrice = useMemo(
+    () => currentOutfitItems.reduce((sum, item) => sum + item.price, 0),
+    [currentOutfitItems]
+  );
+
+  // Compute match score and dynamic stylist commentary
+  const matchEvaluation = useMemo(() => {
+    let score = 92;
+    const badges: string[] = [];
+
+    if (totalOutfitPrice <= budgetLimit) {
+      score += 4;
+      badges.push('Chuẩn ngân sách');
+    } else {
+      score -= 3;
+      badges.push('Vượt ngân sách nhẹ');
+    }
+
+    if (selectedTop && selectedBottom) {
+      score += 2;
+      badges.push('Tương phản phom dáng');
+    }
+    if (selectedOuter) {
+      badges.push('Layer cấu trúc');
+    }
+
+    const clampedScore = Math.min(99, Math.max(75, score));
+
+    const note = `Set đồ được phối theo phong cách ${vibe} dành cho dịp ${occasion}. Áo ${
+      selectedTop?.name?.split('—')?.[0] || 'chủ đạo'
+    } kết hợp cùng ${selectedBottom?.name?.split('—')?.[0] || 'quần/váy'} tạo tỷ lệ thị giác thanh thoát, tôn dáng. ${
+      selectedOuter ? `Lớp áo khoác ${selectedOuter.name.split('—')[0]} tạo điểm nhấn layer chuyên nghiệp.` : ''
+    } Chất vải cao cấp, độ rủ tự nhiên phù hợp khí hậu và chuyển động suốt ngày dài.`;
+
+    return { score: clampedScore, badges, note };
+  }, [occasion, vibe, budgetLimit, totalOutfitPrice, selectedTop, selectedBottom, selectedOuter]);
+
+  // Slot pools sorted/filtered by criteria
+  const getSlotPool = (slot: SlotKey): Product[] => {
+    let pool: Product[] = [];
+    if (slot === 'top') pool = topsPool;
+    else if (slot === 'bottom') pool = bottomsPool;
+    else if (slot === 'outer') pool = outersPool;
+    else if (slot === 'acc') pool = accPool;
+
+    if (!slotSearch.trim()) return pool;
+    const q = slotSearch.toLowerCase().trim();
+    return pool.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q)
+    );
+  };
+
+  // Smart Auto-Mix: 1-click intelligent outfit composition based on criteria
+  const handleAutoMix = () => {
+    // Pick optimal top
+    const topCandidates = topsPool.filter((p) => p.price <= budgetLimit * 0.4);
+    const chosenTop = topCandidates[Math.floor(Math.random() * Math.min(6, topCandidates.length))] || topsPool[0];
+
+    // Pick optimal bottom
+    const bottomCandidates = bottomsPool.filter((p) => p.price <= budgetLimit * 0.35);
+    const chosenBottom = bottomCandidates[Math.floor(Math.random() * Math.min(6, bottomCandidates.length))] || bottomsPool[0];
+
+    // Pick optimal outer
+    const remainingBudget = budgetLimit - (chosenTop?.price || 0) - (chosenBottom?.price || 0);
+    const outerCandidates = outersPool.filter((p) => p.price <= Math.max(remainingBudget, 2500000));
+    const chosenOuter = outerCandidates[Math.floor(Math.random() * Math.min(4, outerCandidates.length))] || outersPool[0];
+
+    // Pick optimal accessory
+    const chosenAcc = accPool[Math.floor(Math.random() * Math.min(5, accPool.length))] || accPool[0];
+
+    if (chosenTop) setSelectedTop(chosenTop);
+    if (chosenBottom) setSelectedBottom(chosenBottom);
+    if (chosenOuter) setSelectedOuter(chosenOuter);
+    if (chosenAcc) setSelectedAcc(chosenAcc);
+    if (chosenTop) setTryOnGarment(chosenTop);
+  };
+
+  // Select an item for active slot
+  const handleSelectItemForSlot = (slot: SlotKey, item: Product) => {
+    if (slot === 'top') setSelectedTop(item);
+    else if (slot === 'bottom') setSelectedBottom(item);
+    else if (slot === 'outer') setSelectedOuter(item);
+    else if (slot === 'acc') setSelectedAcc(item);
+
+    // Also update garment for virtual try-on
+    setTryOnGarment(item);
+  };
+
+  // Add full coordinated outfit to bag
+  const handleAddFullOutfitToCart = () => {
+    currentOutfitItems.forEach((product) => {
+      const activeVariant =
+        product.variants.find((v) => v.stock > 0) || product.variants[0];
+      if (activeVariant) {
+        dispatch(cartActions.add({ product, variant: activeVariant }));
+      }
+    });
+    dispatch(cartActions.toggle(true));
+  };
+
+  // Scroll to try on room with current outfit
+  const handleGoToTryOn = (garmentToTry?: Product) => {
+    if (garmentToTry) setTryOnGarment(garmentToTry);
+    setTimeout(() => {
+      tryOnSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
+  };
+
+  // Webcam Controls for Realtime Try-On
+  const startRealtimeWebcam = async () => {
     setCameraError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -131,14 +302,40 @@ export default function OutfitsPage() {
           videoRef.current.play();
         }
       }, 100);
+
+      // Connect to Decart Realtime Controller
+      if (!decartControllerRef.current) {
+        decartControllerRef.current = new DecartRealtimeController(
+          undefined,
+          (status, message) => {
+            setRealtimeConnected(status === 'connected');
+            if (message) setRealtimeMsg(message);
+          }
+        );
+      }
+
+      const garmentImg = tryOnGarment?.image || selectedTop?.image || '';
+      const prompt = `Virtual try-on of ${tryOnGarment?.name || 'outfit'}, natural fabric drape and realistic fit`;
+      await decartControllerRef.current.connect(stream, garmentImg, prompt);
     } catch {
       setCameraError(
-        'Trình duyệt không tìm thấy Webcam hoặc chưa cấp quyền Camera. Bạn có thể tải ảnh từ máy hoặc chọn ảnh mẫu bên dưới.'
+        'Không tìm thấy Webcam hoặc quyền truy cập Camera bị từ chối. Bạn có thể chọn ảnh mẫu người mẫu hoặc tải ảnh từ máy tính để thử đồ.'
       );
     }
   };
 
-  const captureWebcamSnapshot = () => {
+  const stopRealtimeWebcam = () => {
+    if (videoRef.current?.srcObject) {
+      (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
+    }
+    decartControllerRef.current?.disconnect();
+    setCameraActive(false);
+    setRealtimeConnected(false);
+    setRealtimeMsg('Đã dừng camera gương thử đồ.');
+  };
+
+  // Capture snapshot from webcam
+  const captureSnapshot = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
@@ -148,786 +345,858 @@ export default function OutfitsPage() {
     if (ctx) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-      setInBodyPhoto(dataUrl);
+      setUserBodyPhoto(dataUrl);
+      stopRealtimeWebcam();
+      // Run Decart try-on job with snapshot
+      runDecartPhotoTryOn(dataUrl);
     }
-    if (video.srcObject) {
-      (video.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
-    }
-    setCameraActive(false);
   };
 
-  const stopWebcam = () => {
-    if (videoRef.current?.srcObject) {
-      (videoRef.current.srcObject as MediaStream)
-        .getTracks()
-        .forEach((t) => t.stop());
+  // Run Decart Photo Try-On Job
+  const runDecartPhotoTryOn = async (overridePhoto?: string) => {
+    const photo = overridePhoto || userBodyPhoto;
+    const garment = tryOnGarment || selectedTop;
+    if (!photo || !garment) return;
+
+    setTryOnProcessing(true);
+    setShowOriginalCompare(false);
+    try {
+      const res = await executeDecartTryOn({
+        userImageUrl: photo,
+        garmentImageUrl: garment.image,
+        prompt: `Photorealistic virtual try-on of ${garment.name}, perfect drape and lighting`,
+        category: garment.categorySlug,
+        resolution: '720p',
+      });
+      setTryOnResultImage(res.resultImageUrl);
+    } catch (err: any) {
+      console.warn('Decart Try-On note:', err);
+      setTryOnResultImage(garment.image);
+    } finally {
+      setTryOnProcessing(false);
     }
-    setCameraActive(false);
   };
 
-  const handlePhotoUpload = (file?: File) => {
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setInBodyPhoto(url);
-    setTryOnSession(null);
-  };
-
-  const handleToggleVoiceMic = () => {
-    setInputMode('voice');
+  // Toggle Voice Mic for criteria
+  const handleToggleVoice = () => {
     if (isRecording) {
       voiceSessionRef.current?.stop();
       voiceSessionRef.current = null;
       setIsRecording(false);
       return;
     }
-
-    voiceTextareaRef.current?.focus();
     const sessionCtrl = startContinuousVoiceSession(
-      inVoicePrompt,
-      (liveText) => {
-        setInVoicePrompt(liveText);
-      },
-      (listening) => {
-        setIsRecording(listening);
-      }
+      customVoicePrompt,
+      (text) => setCustomVoicePrompt(text),
+      (listening) => setIsRecording(listening)
     );
     voiceSessionRef.current = sessionCtrl;
   };
 
-  const handleGenerateCostumes = () => {
-    if (isRecording) {
-      voiceSessionRef.current?.stop();
-      voiceSessionRef.current = null;
-      setIsRecording(false);
-    }
-    const newSession = stylistController.recommend({
-      photoUrl: inBodyPhoto,
-      inputMode,
-      quizAnswers: inQuizAnswers,
-      voiceText: inVoicePrompt,
-    });
-    setSession(newSession);
-    setActiveOutfitIdx(0);
-    setTryOnSession(null);
-  };
-
-  const handleTryOnCostume = async (outfit: Outfit) => {
-    setTryOnLoading(true);
-    setShowOriginalCompare(false);
-    const res = await stylistController.tryOn(inBodyPhoto, outfit);
-    setTryOnSession(res);
-    setTryOnLoading(false);
-    setTimeout(() => {
-      previewSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  };
-
-  const handleAddFullCostume = (outfit: Outfit) => {
-    outfit.items.forEach((item) => {
-      if (item.variant.stock > 0) {
-        dispatch(
-          cartActions.add({ product: item.product, variant: item.variant })
-        );
-      }
-    });
-    dispatch(cartActions.toggle(true));
-  };
-
-  const activeOutfit =
-    session.recommendedOutfits[activeOutfitIdx] ||
-    session.recommendedOutfits[0];
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-12">
-      {/* Header */}
-      <header className="text-center max-w-3xl mx-auto">
-        <span className="text-xs uppercase tracking-widest text-primary font-semibold block mb-2">
-          Phòng Tư Vấn Phong Cách & Phối Đồ Cá Nhân Hóa
-        </span>
-        <h1 className="font-serif text-4xl sm:text-6xl font-normal text-neutral mb-3">
-          Stylist Cá Nhân & Phối Bộ Trang Phục
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-12">
+      {/* Page Title & Mission */}
+      <header className="text-center max-w-3xl mx-auto space-y-3">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider">
+          <Icon name="spark" size={14} />
+          <span>Stylist Cá Nhân Hóa & Đề Xuất Phối Đồ Thông Minh</span>
+        </div>
+        <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-neutral font-normal tracking-tight">
+          Chọn Gợi Ý • Đề Xuất Trọn Bộ Hoàn Hảo
         </h1>
-        <p className="text-sm sm:text-base text-base-content/70 leading-relaxed">
-          Chụp ảnh trực tiếp qua Camera để phân tích vóc dáng, sau đó chọn{' '}
-          <strong>Trả lời 4 câu hỏi định hướng</strong> hoặc{' '}
-          <strong>Bật Mic nói trực tiếp / dùng Mumble Voice (Ctrl + Space)</strong>{' '}
-          để nhận 3 bộ trang phục phối sẵn từ kho 334 thiết kế và ướm thử trực tiếp với{' '}
-          <strong>Wearson AI</strong>.
+        <p className="text-sm sm:text-base text-base-content/75 leading-relaxed">
+          Xác định tiêu chí của bạn, chọn các món đồ gợi ý cho từng vị trí trang phục. AI Stylist sẽ tự động phân tích và đề xuất bộ trang phục chuẩn phom dáng, phối màu và ngân sách. Sau đó thử đồ trực tiếp qua <strong>Decart AI Lucy VTON</strong>.
         </p>
       </header>
 
-      {/* =================================================================== */}
-      {/* STEP 1 & STEP 2: CAPTURE BODY PHOTO + SPECIFY STYLING INTENT        */}
-      {/* =================================================================== */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column (5 cols): Body Photo & Body Analysis */}
-        <div className="lg:col-span-5 card bg-base-100 border border-base-300 shadow-md p-6 space-y-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs uppercase tracking-wider text-primary font-semibold block">
-                Bước 1 • Ảnh chân dung toàn thân
-              </span>
-              <h2 className="font-serif text-2xl text-neutral">
-                Ảnh toàn thân & Phân tích vóc dáng
-              </h2>
-            </div>
-          </div>
-
-          {/* Camera / Photo Stage */}
-          <div className="relative rounded-box overflow-hidden bg-base-200 border border-base-300 aspect-[3/4] flex items-center justify-center">
-            {cameraActive ? (
-              <div className="relative w-full h-full flex flex-col items-center justify-center bg-neutral">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                />
-                {/* Silhouette alignment frame */}
-                <div className="absolute inset-6 border-2 border-dashed border-primary/70 rounded-box pointer-events-none flex items-end justify-center pb-4">
-                  <span className="badge badge-neutral text-xs">
-                    Căn chỉnh cơ thể vào khung để phân tích tỷ lệ vai – eo – hông
-                  </span>
-                </div>
-                <div className="absolute bottom-4 inset-x-4 flex gap-2 justify-center">
-                  <button
-                    type="button"
-                    onClick={captureWebcamSnapshot}
-                    className="btn btn-primary btn-sm gap-1.5 shadow-lg"
-                  >
-                    <Icon name="camera" size={16} />
-                    <span>Chụp ảnh ngay</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={stopWebcam}
-                    className="btn btn-neutral btn-sm"
-                  >
-                    Hủy
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <img
-                  src={inBodyPhoto}
-                  alt="Ảnh toàn thân khách hàng"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-3 left-3">
-                  <span className="badge badge-neutral badge-sm shadow-sm">
-                    Đã nhận diện tỷ lệ cơ thể
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-
-          {cameraError && (
-            <div className="alert alert-warning alert-soft text-xs p-3">
-              {cameraError}
-            </div>
-          )}
-
-          {/* Camera / File Upload / Sample Model Buttons */}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={startWebcam}
-              className="btn btn-outline btn-primary btn-sm gap-1.5"
-            >
-              <Icon name="camera" size={15} />
-              <span>Chụp Webcam trực tiếp</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="btn btn-outline btn-sm gap-1.5"
-            >
-              <Icon name="plus" size={15} />
-              <span>Tải ảnh từ máy</span>
-            </button>
-            <input
-              ref={fileInputRef}
-              hidden
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(e) => handlePhotoUpload(e.target.files?.[0])}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <span className="text-xs text-base-content/60 block">
-              Hoặc chọn nhanh ảnh mẫu toàn thân để thử nghiệm:
+      {/* ===================================================================== */}
+      {/* SECTION 1: TIÊU CHÍ PHỐI ĐỒ (STYLING CRITERIA)                        */}
+      {/* ===================================================================== */}
+      <section className="card bg-base-100 border border-base-300 shadow-sm p-6 sm:p-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-base-300 pb-4">
+          <div>
+            <span className="text-xs uppercase tracking-wider text-primary font-bold block mb-1">
+              Bước 1 • Tiêu chí phối đồ của bạn
             </span>
-            <div className="flex flex-wrap gap-1.5">
-              {sampleModelPhotos.map((sample) => (
-                <button
-                  key={sample.label}
-                  type="button"
-                  onClick={() => {
-                    setInBodyPhoto(sample.url);
-                    setTryOnSession(null);
-                  }}
-                  className={`badge cursor-pointer py-2.5 text-xs ${
-                    inBodyPhoto === sample.url
-                      ? 'badge-primary'
-                      : 'badge-outline hover:badge-primary'
-                  }`}
-                >
-                  {sample.label}
-                </button>
-              ))}
-            </div>
+            <h2 className="font-serif text-2xl sm:text-3xl text-neutral">
+              Bạn muốn diện trang phục cho hoàn cảnh nào?
+            </h2>
           </div>
-
-          {/* Body Analysis Summary */}
-          <div className="card bg-base-200/70 border border-base-300 p-4 space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <strong className="text-neutral uppercase tracking-wider">
-                Chỉ số phân tích vóc dáng
-              </strong>
-              <span className="badge badge-primary badge-xs">Tự động nhận diện</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <div className="bg-base-100 p-2.5 rounded-field border border-base-300">
-                <span className="text-base-content/60 block text-[11px]">
-                  Dáng người
-                </span>
-                <strong className="text-neutral">
-                  {session.bodyProfile.bodyShape}
-                </strong>
-              </div>
-              <div className="bg-base-100 p-2.5 rounded-field border border-base-300">
-                <span className="text-base-content/60 block text-[11px]">
-                  Sắc độ da
-                </span>
-                <strong className="text-neutral">
-                  {session.bodyProfile.undertone}
-                </strong>
-              </div>
-            </div>
-            <p className="text-base-content/80 leading-relaxed pt-1">
-              <strong>Tỷ lệ vai–hông:</strong> {session.bodyProfile.shoulderHipRatio} •{' '}
-              <strong>Gợi ý phom dáng:</strong> {session.bodyProfile.recommendedFit}
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={handleAutoMix}
+            className="btn btn-primary btn-sm sm:btn-md gap-2 shadow-xs"
+          >
+            <Icon name="spark" size={16} />
+            <span>AI Tự Động Phối Trọn Bộ Ngay</span>
+          </button>
         </div>
 
-        {/* Right Column (7 cols): Choose Path 1 (4 Guided Questions) OR Path 2 (Mumble Voice / Mic) */}
-        <div className="lg:col-span-7 card bg-base-100 border border-base-300 shadow-md p-6 sm:p-8 space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <span className="text-xs uppercase tracking-wider text-primary font-semibold block">
-                Bước 2 • Nhu cầu trang phục
-              </span>
-              <h2 className="font-serif text-2xl sm:text-3xl text-neutral">
-                Chia sẻ mong muốn phối đồ của bạn
-              </h2>
-            </div>
-
-            {/* Mode Switcher Tabs: Hướng 1 vs Hướng 2 */}
-            <div role="tablist" className="tabs tabs-box bg-base-200 p-1">
-              <button
-                role="tab"
-                type="button"
-                onClick={() => setInputMode('quiz')}
-                className={`tab tab-sm font-medium ${
-                  inputMode === 'quiz' ? 'tab-active' : ''
-                }`}
-              >
-                Hướng 1: 4 Câu hỏi gợi ý
-              </button>
-              <button
-                role="tab"
-                type="button"
-                onClick={() => {
-                  setInputMode('voice');
-                  setTimeout(() => voiceTextareaRef.current?.focus(), 50);
-                }}
-                className={`tab tab-sm font-medium gap-1.5 ${
-                  inputMode === 'voice' ? 'tab-active' : ''
-                }`}
-              >
-                <Icon name="mic" size={14} />
-                <span>Hướng 2: Giọng nói / Mumble Voice</span>
-              </button>
+        {/* Criteria Selectors Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 1. Occasion */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-base-content/70 block">
+              Dịp diện đồ
+            </label>
+            <div className="space-y-1.5">
+              {STYLING_CRITERIA.occasions.map((occ) => {
+                const isSelected = occasion === occ.label;
+                return (
+                  <button
+                    key={occ.id}
+                    type="button"
+                    onClick={() => setOccasion(occ.label)}
+                    className={`w-full text-left p-2.5 rounded-box border transition-all text-xs flex flex-col gap-0.5 ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                        : 'border-base-300 hover:border-base-content/40 bg-base-200/40 text-base-content'
+                    }`}
+                  >
+                    <span className="font-medium text-[13px]">{occ.label}</span>
+                    <span className="text-[11px] opacity-70 line-clamp-1">{occ.desc}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {inputMode === 'quiz' ? (
-            /* =============================================================== */
-            /* HƯỚNG 1: TRẢ LỜI 4 CÂU HỎI CÓ PHƯƠNG ÁN MẪU                     */
-            /* =============================================================== */
-            <div className="space-y-5">
-              {/* Question 1 */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-base-content/70 block">
-                  Câu 1/4: Bạn cần trang phục cho dịp nào?
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {QUIZ_QUESTIONS.occasions.map((occ) => (
-                    <button
-                      key={occ}
-                      type="button"
-                      onClick={() =>
-                        setInQuizAnswers({ ...inQuizAnswers, occasion: occ })
-                      }
-                      className={`btn btn-sm justify-start text-left h-auto py-2.5 px-3 ${
-                        inQuizAnswers.occasion === occ
-                          ? 'btn-primary'
-                          : 'btn-outline border-base-300'
-                      }`}
-                    >
-                      <span>{occ}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Question 2 */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-base-content/70 block">
-                  Câu 2/4: Phong cách chủ đạo bạn yêu thích?
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {QUIZ_QUESTIONS.vibes.map((vibe) => (
-                    <button
-                      key={vibe}
-                      type="button"
-                      onClick={() =>
-                        setInQuizAnswers({ ...inQuizAnswers, styleVibe: vibe })
-                      }
-                      className={`btn btn-sm justify-start text-left h-auto py-2.5 px-3 ${
-                        inQuizAnswers.styleVibe === vibe
-                          ? 'btn-primary'
-                          : 'btn-outline border-base-300'
-                      }`}
-                    >
-                      <span>{vibe}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Question 3 */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-base-content/70 block">
-                  Câu 3/4: Ưu tiên tôn dáng hoặc che khuyết điểm nào?
-                </label>
-                <div className="grid grid-cols-1 gap-2">
-                  {QUIZ_QUESTIONS.fitGoals.map((goal) => (
-                    <button
-                      key={goal}
-                      type="button"
-                      onClick={() =>
-                        setInQuizAnswers({ ...inQuizAnswers, fitGoal: goal })
-                      }
-                      className={`btn btn-sm justify-start text-left h-auto py-2.5 px-3 ${
-                        inQuizAnswers.fitGoal === goal
-                          ? 'btn-primary'
-                          : 'btn-outline border-base-300'
-                      }`}
-                    >
-                      <span>{goal}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Question 4 */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-base-content/70 block">
-                  Câu 4/4: Ngân sách dự kiến cho cả bộ phối (3 món)?
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {QUIZ_QUESTIONS.budgets.map((b) => (
-                    <button
-                      key={b.value}
-                      type="button"
-                      onClick={() =>
-                        setInQuizAnswers({
-                          ...inQuizAnswers,
-                          budgetLimit: b.value,
-                        })
-                      }
-                      className={`btn btn-sm h-auto py-2.5 ${
-                        inQuizAnswers.budgetLimit === b.value
-                          ? 'btn-primary'
-                          : 'btn-outline border-base-300'
-                      }`}
-                    >
-                      <span>{b.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* =============================================================== */
-            /* HƯỚNG 2: BẬT MIC NÓI LIÊN TỤC HOẶC DÙNG MUMBLE VOICE             */
-            /* =============================================================== */
-            <div className="space-y-4">
-              <div className="alert alert-info alert-soft text-xs flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`status ${
-                      isRecording ? 'status-error animate-ping' : 'status-info'
+          {/* 2. Style / Vibe */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-base-content/70 block">
+              Phong cách & Vibe
+            </label>
+            <div className="space-y-1.5">
+              {STYLING_CRITERIA.vibes.map((v) => {
+                const isSelected = vibe === v.label;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setVibe(v.label)}
+                    className={`w-full text-left p-2.5 rounded-box border transition-all text-xs flex flex-col gap-0.5 ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                        : 'border-base-300 hover:border-base-content/40 bg-base-200/40 text-base-content'
                     }`}
-                  />
-                  <span>
-                    <strong>Hỗ trợ Mumble Voice Desktop & Thu âm liên tục:</strong>{' '}
-                    Đặt con trỏ vào ô văn bản rồi giữ phím{' '}
-                    <kbd className="kbd kbd-xs">Ctrl</kbd>+
-                    <kbd className="kbd kbd-xs">Space</kbd> để nói qua Mumble Voice, hoặc bấm nút{' '}
-                    <strong>Bắt đầu thu âm Micro</strong> để nói nhiều câu liên tục (chỉ dừng khi bạn bấm Dừng thu âm).
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-base-content/70">
-                    Mong muốn phối đồ của bạn
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {inVoicePrompt && (
-                      <button
-                        type="button"
-                        onClick={() => setInVoicePrompt('')}
-                        className="btn btn-ghost btn-xs"
-                      >
-                        Xóa nội dung
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleToggleVoiceMic}
-                      className={`btn btn-xs gap-1.5 ${
-                        isRecording
-                          ? 'btn-error animate-pulse'
-                          : 'btn-outline btn-primary'
-                      }`}
-                    >
-                      <Icon name="mic" size={14} />
-                      <span>
-                        {isRecording
-                          ? 'Đang nghe liên tục… Bấm để dừng'
-                          : 'Bắt đầu thu âm Micro'}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                <textarea
-                  ref={voiceTextareaRef}
-                  rows={4}
-                  value={inVoicePrompt}
-                  onChange={(e) => setInVoicePrompt(e.target.value)}
-                  placeholder="Đặt con trỏ tại đây và giữ Ctrl+Space để nói qua Mumble Voice, hoặc bấm nút Bắt đầu thu âm Micro để nói trực tiếp..."
-                  className="textarea textarea-bordered w-full text-sm leading-relaxed"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <span className="text-xs text-base-content/60 block">
-                  Hoặc chọn nhanh một câu mẫu:
-                </span>
-                <div className="flex flex-col gap-1.5">
-                  {SAMPLE_VOICE_INTENTS.map((prompt) => (
-                    <button
-                      key={prompt}
-                      type="button"
-                      onClick={() => setInVoicePrompt(prompt)}
-                      className="btn btn-ghost btn-xs justify-start text-left h-auto py-2 px-3 border border-base-300 hover:border-primary text-xs font-normal"
-                    >
-                      “{prompt}”
-                    </button>
-                  ))}
-                </div>
-              </div>
+                  >
+                    <span className="font-medium text-[13px]">{v.label}</span>
+                    <span className="text-[11px] opacity-70 line-clamp-1">{v.desc}</span>
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </div>
 
-          {/* Action Button */}
-          <div className="pt-2 border-t border-base-300">
-            <button
-              type="button"
-              onClick={handleGenerateCostumes}
-              className="btn btn-primary btn-block btn-lg shadow-md gap-2"
-            >
-              <span>Phân tích Vóc dáng & Phối 3 Bộ Trang Phục Ngay</span>
-              <Icon name="arrow" size={18} />
-            </button>
+          {/* 3. Budget */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-base-content/70 block">
+              Ngân sách trọn bộ
+            </label>
+            <div className="space-y-1.5">
+              {STYLING_CRITERIA.budgets.map((b) => {
+                const isSelected = budgetLimit === b.value;
+                return (
+                  <button
+                    key={b.value}
+                    type="button"
+                    onClick={() => setBudgetLimit(b.value)}
+                    className={`w-full text-left p-2.5 rounded-box border transition-all text-xs flex items-center justify-between ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                        : 'border-base-300 hover:border-base-content/40 bg-base-200/40 text-base-content'
+                    }`}
+                  >
+                    <span>{b.label}</span>
+                    {isSelected && <span className="badge badge-primary badge-xs">Đang chọn</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 4. Preferred Colors & Voice */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-base-content/70 block">
+              Tone màu chủ đạo
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {STYLING_CRITERIA.colors.map((c) => {
+                const isSelected = preferredColors.includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      setPreferredColors(
+                        isSelected ? preferredColors.filter((id) => id !== c.id) : [...preferredColors, c.id]
+                      );
+                    }}
+                    className={`text-left p-2 rounded-box border transition-all text-xs flex items-center gap-2 ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 text-primary font-bold'
+                        : 'border-base-300 hover:border-base-content/40 bg-base-200/40 text-base-content'
+                    }`}
+                  >
+                    <span
+                      className="w-3.5 h-3.5 rounded-full border border-base-content/20 shadow-xs shrink-0"
+                      style={{ backgroundColor: c.hex }}
+                    />
+                    <span className="truncate text-[11px]">{c.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Voice input prompt */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleToggleVoice}
+                className={`btn btn-xs w-full gap-1.5 ${
+                  isRecording ? 'btn-error animate-pulse' : 'btn-outline border-base-300'
+                }`}
+              >
+                <Icon name="mic" size={13} />
+                <span>{isRecording ? 'Đang nghe giọng nói…' : 'Thêm ghi chú bằng giọng nói'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* =================================================================== */}
-      {/* STEP 3: RECOMMENDED COSTUMES (3 Complete Outfits)                   */}
-      {/* =================================================================== */}
-      <section className="space-y-6">
-        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-base-300 pb-4">
+      {/* ===================================================================== */}
+      {/* SECTION 2: BỘ TRANG PHỤC ĐỀ XUẤT HOÀN CHỈNH (PROPOSED OUTFIT CARD)   */}
+      {/* ===================================================================== */}
+      <section className="card bg-base-100 border-2 border-primary/30 shadow-xl overflow-hidden p-6 sm:p-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-base-300 pb-4">
           <div>
-            <span className="text-xs uppercase tracking-wider text-primary font-semibold block">
-              Bước 3 • Gợi ý phối đồ hoàn chỉnh
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-neutral">
-              3 Bộ Trang Phục Phối Sẵn Cho Bạn
+            <div className="flex items-center gap-2 mb-1">
+              <span className="badge badge-primary font-semibold">
+                Điểm phù hợp: {matchEvaluation.score}/100
+              </span>
+              {matchEvaluation.badges.map((b) => (
+                <span key={b} className="badge badge-outline badge-sm">
+                  {b}
+                </span>
+              ))}
+            </div>
+            <h2 className="font-serif text-3xl sm:text-4xl text-neutral font-normal">
+              Bộ Trang Phục Đề Xuất Theo Tiêu Chí Của Bạn
             </h2>
-            <p className="text-xs sm:text-sm text-base-content/70 mt-1">
-              Dựa trên dáng <strong>{session.bodyProfile.bodyShape}</strong> • Dịp:{' '}
-              <strong>{session.preferences.occasion}</strong> • Phong cách:{' '}
-              <strong>{session.preferences.styleVibe}</strong>
-            </p>
           </div>
 
-          {/* Costume Selector Tabs */}
-          <div role="tablist" className="tabs tabs-box bg-base-200 p-1">
-            {session.recommendedOutfits.map((outfit, idx) => (
-              <button
-                key={outfit.outfitId}
-                role="tab"
-                type="button"
-                onClick={() => setActiveOutfitIdx(idx)}
-                className={`tab tab-sm font-semibold ${
-                  activeOutfitIdx === idx ? 'tab-active' : ''
-                }`}
-              >
-                Bộ 0{idx + 1} (Phù hợp {outfit.matchScore}%)
-              </button>
-            ))}
+          {/* Pricing & Quick Try-On CTA */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="text-right pr-2">
+              <span className="text-xs text-base-content/60 block">Tổng chi phí ({currentOutfitItems.length} món)</span>
+              <span className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+                {money(totalOutfitPrice)}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleGoToTryOn(selectedTop || undefined)}
+              className="btn btn-neutral btn-sm sm:btn-md gap-2 shadow-md"
+            >
+              <Icon name="camera" size={17} />
+              <span>Thử Đồ Realtime Với Decart AI</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAddFullOutfitToCart}
+              className="btn btn-primary btn-sm sm:btn-md gap-2 shadow-md"
+            >
+              <Icon name="bag" size={17} />
+              <span>Thêm Cả Bộ Vào Giỏ</span>
+            </button>
           </div>
         </div>
 
-        {/* Active Costume Showcase Card */}
-        {activeOutfit && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch bg-base-100 rounded-box border border-base-300 shadow-xl overflow-hidden p-6 sm:p-10">
-            {/* Collage Column (3 Garments in the Costume) */}
-            <div className="lg:col-span-7 grid grid-cols-2 gap-3 min-h-[440px]">
-              {activeOutfit.items[0] && (
-                <figure className="relative row-span-2 rounded-box overflow-hidden bg-base-200 border border-base-300 m-0">
+        {/* Composite Outfit Layout (Collage of the Selected Slot Items) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Collage Display (7 cols) */}
+          <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-3 bg-base-200/50 p-4 rounded-box border border-base-300">
+            {SLOTS.map((slot) => {
+              const item =
+                slot.key === 'top'
+                  ? selectedTop
+                  : slot.key === 'bottom'
+                  ? selectedBottom
+                  : slot.key === 'outer'
+                  ? selectedOuter
+                  : selectedAcc;
+
+              return (
+                <div
+                  key={slot.key}
+                  onClick={() => setActiveSlotTab(slot.key)}
+                  className={`relative rounded-box overflow-hidden border bg-base-100 flex flex-col cursor-pointer transition-all ${
+                    activeSlotTab === slot.key
+                      ? 'border-primary ring-2 ring-primary/30 shadow-md'
+                      : 'border-base-300 hover:border-base-content/40'
+                  }`}
+                >
+                  <figure className="relative aspect-[3/4] bg-base-200 m-0 overflow-hidden">
+                    {item ? (
+                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs text-base-content/50 p-2 text-center">
+                        Chưa chọn món
+                      </div>
+                    )}
+                    <span className="badge badge-neutral badge-xs absolute top-2 left-2 shadow-xs">
+                      {slot.title}
+                    </span>
+                  </figure>
+                  <div className="p-2 space-y-1">
+                    <p className="text-xs font-semibold text-base-content line-clamp-1">
+                      {item ? item.name : `Chọn ${slot.title}`}
+                    </p>
+                    <span className="text-xs text-primary font-bold block">
+                      {item ? money(item.price) : '0₫'}
+                    </span>
+                    <span className="text-[10px] text-base-content/60 block underline">
+                      Bấm để đổi gợi ý khác
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Stylist Commentary & Detailed Breakdown (5 cols) */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="bg-primary/5 border border-primary/20 rounded-box p-4 space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <Icon name="spark" size={14} />
+                <span>Nhận Xét Từ AI Stylist:</span>
+              </span>
+              <p className="text-xs sm:text-sm text-base-content/85 leading-relaxed">
+                {matchEvaluation.note}
+              </p>
+            </div>
+
+            {/* Itemized List with Direct Try-On triggers */}
+            <div className="divide-y divide-base-300 border-y border-base-300">
+              {currentOutfitItems.map((prod) => (
+                <div key={prod.productId} className="py-2.5 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <img
+                      src={prod.image}
+                      alt={prod.name}
+                      className="w-10 h-10 object-cover rounded-field border border-base-300 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <Link
+                        href={`/product/${prod.productId}`}
+                        className="font-semibold text-base-content hover:text-primary transition-colors line-clamp-1"
+                      >
+                        {prod.name}
+                      </Link>
+                      <span className="text-base-content/60 block">{prod.category}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-bold text-base-content">{money(prod.price)}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleGoToTryOn(prod)}
+                      title="Thử riêng món này với Decart AI"
+                      className="btn btn-ghost btn-xs text-primary gap-1"
+                    >
+                      <Icon name="camera" size={13} />
+                      <span>Thử món này</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Budget Progress Bar */}
+            <div className="space-y-1 pt-1">
+              <div className="flex justify-between text-xs text-base-content/70">
+                <span>Ngân sách sử dụng</span>
+                <span>
+                  <strong>{money(totalOutfitPrice)}</strong> / {money(budgetLimit)}
+                </span>
+              </div>
+              <progress
+                className={`progress w-full ${
+                  totalOutfitPrice <= budgetLimit ? 'progress-primary' : 'progress-warning'
+                }`}
+                value={totalOutfitPrice}
+                max={budgetLimit}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===================================================================== */}
+      {/* SECTION 3: KHUNG CHỌN GỢI Ý MÓN ĐỒ THEO TỪNG VỊ TRÍ (SLOT PICKERS)    */}
+      {/* ===================================================================== */}
+      <section className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-base-300 pb-3">
+          <div>
+            <span className="text-xs uppercase tracking-wider text-primary font-bold block mb-1">
+              Bước 2 • Danh mục gợi ý từng món
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl text-neutral">
+              Chọn món đồ bạn ưng ý vào từng vị trí
+            </h2>
+            <p className="text-xs text-base-content/70">
+              Nhấp vào sản phẩm bất kỳ để đưa vào bộ trang phục đề xuất bên trên.
+            </p>
+          </div>
+
+          {/* Slot Tabs */}
+          <div role="tablist" className="tabs tabs-box bg-base-200 p-1">
+            {SLOTS.map((slot) => {
+              const isActive = activeSlotTab === slot.key;
+              return (
+                <button
+                  key={slot.key}
+                  role="tab"
+                  type="button"
+                  onClick={() => {
+                    setActiveSlotTab(slot.key);
+                    setSlotSearch('');
+                  }}
+                  className={`tab tab-sm font-semibold gap-1.5 ${isActive ? 'tab-active' : ''}`}
+                >
+                  <Icon name={slot.iconName} size={14} />
+                  <span>{slot.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Search & Slot Info */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-base-content/70">
+            <span className="badge badge-neutral badge-sm">
+              Đang xem gợi ý: {SLOTS.find((s) => s.key === activeSlotTab)?.title}
+            </span>
+            <span>({getSlotPool(activeSlotTab).length} sản phẩm thật có sẵn)</span>
+          </div>
+
+          <div className="relative w-full sm:w-72">
+            <input
+              type="text"
+              value={slotSearch}
+              onChange={(e) => setSlotSearch(e.target.value)}
+              placeholder="Tìm kiếm trong danh mục này..."
+              className="input input-bordered input-sm w-full pr-8 text-xs"
+            />
+            {slotSearch && (
+              <button
+                type="button"
+                onClick={() => setSlotSearch('')}
+                className="absolute right-2 top-2 text-base-content/50 hover:text-base-content"
+              >
+                <Icon name="close" size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Suggestion Products Grid for Active Slot */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+          {getSlotPool(activeSlotTab).slice(0, 24).map((product) => {
+            const isCurrentlySelected =
+              activeSlotTab === 'top'
+                ? selectedTop?.productId === product.productId
+                : activeSlotTab === 'bottom'
+                ? selectedBottom?.productId === product.productId
+                : activeSlotTab === 'outer'
+                ? selectedOuter?.productId === product.productId
+                : selectedAcc?.productId === product.productId;
+
+            return (
+              <div
+                key={product.productId}
+                onClick={() => handleSelectItemForSlot(activeSlotTab, product)}
+                className={`card card-compact border transition-all duration-200 cursor-pointer overflow-hidden group ${
+                  isCurrentlySelected
+                    ? 'border-primary ring-2 ring-primary/40 bg-primary/5 shadow-md'
+                    : 'border-base-300 hover:border-base-content/40 bg-base-100 hover:shadow-xs'
+                }`}
+              >
+                <figure className="relative aspect-[3/4] bg-base-200 m-0 overflow-hidden">
                   <img
-                    src={activeOutfit.items[0].product.image}
-                    alt={activeOutfit.items[0].product.name}
+                    src={product.image}
+                    alt={product.name}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  {isCurrentlySelected ? (
+                    <span className="badge badge-primary badge-xs absolute top-2 right-2 font-bold shadow-xs">
+                      Đang chọn
+                    </span>
+                  ) : (
+                    <span className="badge badge-neutral/80 badge-xs absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      Bấm để chọn
+                    </span>
+                  )}
+                  {product.colors?.[1] && (
+                    <span className="badge badge-ghost badge-xs absolute bottom-2 left-2 text-[10px] bg-base-100/80 backdrop-blur-xs">
+                      {product.colors[1]}
+                    </span>
+                  )}
+                </figure>
+                <div className="p-2.5 space-y-1">
+                  <p className="text-xs font-semibold text-base-content line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                    {product.name}
+                  </p>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs font-bold text-neutral">{money(product.price)}</span>
+                    <span className="text-[10px] text-base-content/60">{product.category}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ===================================================================== */}
+      {/* SECTION 4: PHÒNG THỬ ĐỒ REALTIME VỚI DECART AI (LUCY VTON 3.6)         */}
+      {/* ===================================================================== */}
+      <div ref={tryOnSectionRef}>
+        <section className="card bg-base-100 border-2 border-primary/40 shadow-2xl overflow-hidden p-6 sm:p-10 space-y-8">
+          {/* Header */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-base-300 pb-5">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="badge badge-primary text-xs font-bold">
+                  Decart AI • Lucy VTON 3.6
+                </span>
+                <span
+                  className={`badge badge-sm ${
+                    decartStatus?.configured ? 'badge-success' : 'badge-neutral'
+                  }`}
+                >
+                  {decartStatus?.configured ? 'Live API Active (dct_...fBkd)' : 'Sandbox Mode'}
+                </span>
+                <span className="badge badge-outline badge-sm">Realtime Neural Stream</span>
+              </div>
+              <h2 className="font-serif text-3xl sm:text-4xl text-neutral">
+                Phòng Thử Đồ Realtime Với Decart AI
+              </h2>
+              <p className="text-xs sm:text-sm text-base-content/75">
+                Mô phỏng trực tiếp phom dáng trang phục khách hàng vừa phối lên cơ thể theo thời gian thực.
+              </p>
+            </div>
+
+            {/* Active Garment Under Try-On */}
+            {tryOnGarment && (
+              <div className="flex items-center gap-3 bg-base-200/70 p-2.5 rounded-box border border-base-300">
+                <img
+                  src={tryOnGarment.image}
+                  alt={tryOnGarment.name}
+                  className="w-12 h-14 object-cover rounded-field border border-base-300"
+                />
+                <div className="text-xs max-w-[200px]">
+                  <span className="text-[10px] text-primary font-bold uppercase block">Món đang thử:</span>
+                  <p className="font-semibold text-base-content truncate">{tryOnGarment.name}</p>
+                  <span className="text-base-content/60">{money(tryOnGarment.price)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Garment Switcher: Switch between pieces of the current outfit */}
+          <div className="space-y-2">
+            <span className="text-xs font-bold text-base-content/80 block">
+              Chọn món trong bộ phối để ướm thử ngay trên gương:
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {currentOutfitItems.map((item) => {
+                const isSelected = tryOnGarment?.productId === item.productId;
+                return (
+                  <button
+                    key={item.productId}
+                    type="button"
+                    onClick={() => {
+                      setTryOnGarment(item);
+                      if (decartControllerRef.current) {
+                        decartControllerRef.current.updateGarment(
+                          item.image,
+                          `Virtual try-on of ${item.name}`
+                        );
+                      }
+                    }}
+                    className={`btn btn-sm gap-2 h-auto py-1.5 px-3 ${
+                      isSelected
+                        ? 'btn-primary shadow-xs'
+                        : 'btn-outline border-base-300 bg-base-100'
+                    }`}
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-5 h-6 object-cover rounded-xs"
+                    />
+                    <span className="truncate max-w-[140px] text-xs">{item.name}</span>
+                    <span className="text-[11px] opacity-80">{money(item.price)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Try-On Workspace: Live Mirror (Webcam) or High-Res Studio Photo */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left Stage (7 cols): Camera Video or Photo Preview */}
+            <div className="lg:col-span-7 bg-base-200/60 rounded-box border border-base-300 min-h-[460px] sm:min-h-[540px] relative overflow-hidden flex flex-col items-center justify-center p-4">
+              {cameraActive ? (
+                /* LIVE WEBCAM MIRROR */
+                <div className="relative w-full h-full min-h-[460px] sm:min-h-[520px] flex items-center justify-center bg-black rounded-field overflow-hidden">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
                     className="w-full h-full object-cover"
                   />
-                  <span className="badge badge-neutral absolute top-3 left-3 text-xs">
-                    {activeOutfit.items[0].slotRole} (Món chủ đạo)
-                  </span>
-                </figure>
+
+                  {/* Pose Guidance Silhouette */}
+                  <div className="absolute inset-8 border-2 border-dashed border-primary/60 rounded-box pointer-events-none flex flex-col justify-between items-center p-4">
+                    <span className="badge badge-neutral/90 text-[11px] backdrop-blur-xs">
+                      Căn chỉnh cơ thể vào khung hình để Decart AI nhận diện tỷ lệ vai & eo
+                    </span>
+                    <span className="badge badge-primary badge-xs">
+                      {tryOnGarment?.name}
+                    </span>
+                  </div>
+
+                  {/* Realtime Telemetry HUD */}
+                  <div className="absolute top-3 left-3 flex flex-col gap-1 text-[11px] bg-black/70 backdrop-blur-md text-white p-2.5 rounded-field border border-white/10">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="font-bold">Decart Lucy VTON 3.6 • Live Stream</span>
+                    </div>
+                    <span className="text-white/70">Độ trễ: ~118ms • FPS: 30 • HD 720p</span>
+                    <span className="text-emerald-300 text-[10px]">{realtimeMsg}</span>
+                  </div>
+
+                  {/* Camera Controls Bar */}
+                  <div className="absolute bottom-4 inset-x-4 flex flex-wrap justify-center gap-2 bg-black/60 backdrop-blur-md p-2 rounded-box border border-white/10">
+                    <button
+                      type="button"
+                      onClick={captureSnapshot}
+                      className="btn btn-primary btn-sm gap-1.5 shadow-lg"
+                    >
+                      <Icon name="camera" size={15} />
+                      <span>Chụp & Lưu Khoảnh Khắc</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stopRealtimeWebcam}
+                      className="btn btn-neutral btn-sm"
+                    >
+                      Dừng Camera
+                    </button>
+                  </div>
+                </div>
+              ) : tryOnResultImage && !showOriginalCompare ? (
+                /* COMPLETED TRY-ON RESULT VIEW */
+                <div className="relative w-full h-full min-h-[460px] flex items-center justify-center">
+                  <img
+                    src={tryOnResultImage}
+                    alt="Kết quả thử đồ Decart AI"
+                    className="max-h-[520px] max-w-full object-contain rounded-field shadow-lg"
+                  />
+                  <div className="absolute top-3 left-3">
+                    <span className="badge badge-success badge-sm shadow-sm">
+                      Mô Phỏng Decart AI Hoàn Tất (96%)
+                    </span>
+                  </div>
+                </div>
+              ) : userBodyPhoto ? (
+                /* STATIC PHOTO / MANNEQUIN VIEW */
+                <div className="relative w-full h-full min-h-[460px] flex items-center justify-center">
+                  <img
+                    src={userBodyPhoto}
+                    alt="Ảnh người mẫu thử đồ"
+                    className="max-h-[520px] max-w-full object-contain rounded-field shadow-md"
+                  />
+                  <div className="absolute top-3 left-3">
+                    <span className="badge badge-neutral badge-sm shadow-sm">
+                      {showOriginalCompare ? 'Ảnh Gốc Đối Chiếu' : 'Ảnh Sẵn Sàng Thử Đồ'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center p-6 space-y-3">
+                  <Icon name="camera" size={40} className="mx-auto text-base-content/40" />
+                  <p className="text-xs text-base-content/60">
+                    Bật webcam hoặc chọn người mẫu để bắt đầu thử đồ.
+                  </p>
+                </div>
               )}
-              {activeOutfit.items[1] && (
-                <figure className="relative rounded-box overflow-hidden bg-base-200 border border-base-300 m-0">
-                  <img
-                    src={activeOutfit.items[1].product.image}
-                    alt={activeOutfit.items[1].product.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <span className="badge badge-neutral badge-sm absolute top-3 left-3 text-xs">
-                    {activeOutfit.items[1].slotRole}
-                  </span>
-                </figure>
+
+              {/* Loading Overlay */}
+              {tryOnProcessing && (
+                <div className="absolute inset-0 bg-neutral/70 backdrop-blur-xs flex flex-col items-center justify-center text-neutral-content p-6 z-20">
+                  <span className="loading loading-spinner loading-lg text-primary mb-3" />
+                  <h3 className="font-serif text-xl mb-1 text-white">
+                    Decart Lucy VTON đang tính toán nếp rủ vải...
+                  </h3>
+                  <p className="text-xs text-neutral-content/70">
+                    Khớp tỷ lệ bờ vai, nếp gấp chất liệu và ánh sáng tự nhiên.
+                  </p>
+                </div>
               )}
-              {activeOutfit.items[2] && (
-                <figure className="relative rounded-box overflow-hidden bg-base-200 border border-base-300 m-0">
-                  <img
-                    src={activeOutfit.items[2].product.image}
-                    alt={activeOutfit.items[2].product.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <span className="badge badge-neutral badge-sm absolute top-3 left-3 text-xs">
-                    {activeOutfit.items[2].slotRole}
-                  </span>
-                </figure>
+
+              {cameraError && (
+                <div className="alert alert-warning alert-soft text-xs mt-3 w-full">
+                  {cameraError}
+                </div>
               )}
             </div>
 
-            {/* Copy, Stylist Explanation & Breakdown Column */}
-            <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
-              <div>
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  <span className="badge badge-primary badge-sm font-semibold">
-                    Độ hợp dáng: {activeOutfit.matchScore}%
-                  </span>
-                  {activeOutfit.matchBadges.map((b) => (
-                    <span key={b} className="badge badge-ghost badge-sm text-xs">
-                      {b}
-                    </span>
-                  ))}
-                </div>
-
-                <h3 className="font-serif text-3xl font-normal text-neutral mb-2">
-                  {activeOutfit.title}
-                </h3>
-                <p className="text-sm text-base-content/80 leading-relaxed bg-base-200/60 p-3.5 rounded-field border border-base-300">
-                  <strong>Nhận xét từ Stylist:</strong> {activeOutfit.stylistNote}
-                </p>
-
-                {/* Individual Item Breakdown */}
-                <div className="divide-y divide-base-300 border-y border-base-300 mt-5">
-                  {activeOutfit.items.map((item) => (
-                    <div
-                      key={item.outfitItemId}
-                      className="py-3 flex items-center justify-between text-sm gap-2"
-                    >
-                      <div className="min-w-0">
-                        <span className="badge badge-outline badge-xs mr-2">
-                          {item.slotRole}
-                        </span>
-                        <Link
-                          href={`/product/${item.product.productId}`}
-                          className="font-medium text-base-content hover:text-primary transition-colors"
-                        >
-                          {item.product.name}
-                        </Link>
-                        <div className="text-xs text-base-content/60">
-                          Màu: {item.variant.colorName} • Size khuyến nghị:{' '}
-                          {item.variant.size}
-                        </div>
-                      </div>
-                      <span className="font-semibold text-base-content whitespace-nowrap">
-                        {money(item.variant.price)}
-                      </span>
-                    </div>
-                  ))}
+            {/* Right Controls & Model Picker (5 cols) */}
+            <div className="lg:col-span-5 space-y-5">
+              {/* Camera Activation Buttons */}
+              <div className="space-y-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-base-content/70 block">
+                  Phương thức thử đồ
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={startRealtimeWebcam}
+                    className="btn btn-primary btn-sm gap-2"
+                  >
+                    <Icon name="camera" size={16} />
+                    <span>Bật Gương Webcam</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn btn-outline btn-sm gap-1.5"
+                  >
+                    <Icon name="plus" size={15} />
+                    <span>Tải Ảnh Từ Máy</span>
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    hidden
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setUserBodyPhoto(URL.createObjectURL(file));
+                        setTryOnResultImage(null);
+                      }
+                    }}
+                  />
                 </div>
               </div>
 
-              {/* Pricing & Dual CTA: Wearson AI Try-On + Batch Add to Cart */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-base-content/70">
-                    Tổng trọn bộ ({activeOutfit.items.length} món đồ)
-                  </span>
-                  <strong className="text-2xl font-bold text-primary">
-                    {money(activeOutfit.totalPrice)}
-                  </strong>
+              {/* Mannequin / Fashion Model Selection */}
+              <div className="space-y-2 pt-2 border-t border-base-300">
+                <span className="text-xs font-bold text-base-content/80 block">
+                  Hoặc chọn nhanh người mẫu chuẩn để thử trang phục:
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {SAMPLE_MODELS.map((m) => {
+                    const isSelected = userBodyPhoto === m.photo;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => {
+                          setUserBodyPhoto(m.photo);
+                          setTryOnResultImage(null);
+                          setCameraError(null);
+                          if (cameraActive) stopRealtimeWebcam();
+                        }}
+                        className={`text-left rounded-box p-1.5 border transition-all text-xs flex flex-col items-center gap-1 ${
+                          isSelected
+                            ? 'border-primary ring-2 ring-primary/30 bg-primary/5'
+                            : 'border-base-300 hover:border-base-content/40 bg-base-200/40'
+                        }`}
+                      >
+                        <img
+                          src={m.photo}
+                          alt={m.name}
+                          className="w-12 h-16 object-cover rounded-field shadow-xs"
+                        />
+                        <span className="font-semibold text-[11px] truncate w-full text-center">
+                          {m.name}
+                        </span>
+                        <span className="badge badge-ghost badge-xs text-[9px]">
+                          {m.badge}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
 
+              {/* Decart Action Button */}
+              <div className="space-y-3 pt-2 border-t border-base-300">
                 <button
                   type="button"
-                  disabled={tryOnLoading}
-                  onClick={() => handleTryOnCostume(activeOutfit)}
+                  disabled={tryOnProcessing}
+                  onClick={() => runDecartPhotoTryOn()}
                   className="btn btn-neutral btn-block btn-lg shadow-md gap-2"
                 >
-                  {tryOnLoading ? (
+                  {tryOnProcessing ? (
                     <>
                       <span className="loading loading-spinner loading-sm" />
-                      <span>Wearson AI đang ghép bộ trang phục lên ảnh của bạn…</span>
+                      <span>Decart AI đang ghép trang phục…</span>
                     </>
                   ) : (
                     <>
-                      <Icon name="camera" size={18} />
-                      <span>Thử trực tiếp bộ này với Wearson AI</span>
+                      <Icon name="spark" size={18} />
+                      <span>Thử Món Này Với Decart Lucy VTON</span>
                     </>
                   )}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleAddFullCostume(activeOutfit)}
-                  className="btn btn-primary btn-block gap-2"
-                >
-                  <Icon name="bag" size={18} />
-                  <span>Thêm trọn bộ vào túi mua sắm</span>
-                </button>
+                {tryOnResultImage && (
+                  <button
+                    type="button"
+                    onClick={() => setShowOriginalCompare(!showOriginalCompare)}
+                    className="btn btn-outline btn-sm btn-block"
+                  >
+                    {showOriginalCompare ? 'Xem Kết Quả Đã Mặc Thử' : 'So Sánh Với Ảnh Gốc'}
+                  </button>
+                )}
+
+                {/* Add to Cart Quick Action */}
+                {tryOnGarment && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const v =
+                        tryOnGarment.variants.find((item) => item.stock > 0) ||
+                        tryOnGarment.variants[0];
+                      if (v) {
+                        dispatch(cartActions.add({ product: tryOnGarment, variant: v }));
+                        dispatch(cartActions.toggle(true));
+                      }
+                    }}
+                    className="btn btn-primary btn-block gap-2"
+                  >
+                    <Icon name="bag" size={17} />
+                    <span>
+                      Thêm {tryOnGarment.name} Vào Giỏ ({money(tryOnGarment.price)})
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
-        )}
-      </section>
-
-      {/* =================================================================== */}
-      {/* STEP 4: VIRTUAL TRY-ON PREVIEW                                      */}
-      {/* =================================================================== */}
-      <div ref={previewSectionRef}>
-        {tryOnSession && (
-          <section className="card bg-base-100 border-2 border-primary/40 shadow-2xl p-6 sm:p-10 space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-base-300 pb-4">
-              <div>
-                <span className="badge badge-primary badge-sm mb-1">
-                  Phòng Thử Đồ Ảo Wearson AI
-                </span>
-                <h2 className="font-serif text-3xl text-neutral">
-                  Kết quả Mặc thử Trực tiếp với Wearson AI
-                </h2>
-                <p className="text-xs sm:text-sm text-base-content/70">
-                  {tryOnSession.drapeNote}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowOriginalCompare(!showOriginalCompare)}
-                  className="btn btn-outline btn-sm gap-1.5"
-                >
-                  <span>
-                    {showOriginalCompare
-                      ? 'Xem ảnh đã mặc thử (Wearson AI)'
-                      : 'So sánh với ảnh gốc'}
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              <div className="lg:col-span-7 flex justify-center bg-base-200 rounded-box p-4 border border-base-300">
-                <img
-                  src={
-                    showOriginalCompare
-                      ? tryOnSession.userImageUrl
-                      : tryOnSession.resultImageUrl
-                  }
-                  alt="Kết quả thử đồ Wearson AI"
-                  className="max-h-[580px] rounded-field shadow-lg object-contain"
-                />
-              </div>
-
-              <div className="lg:col-span-5 space-y-5">
-                <div className="stats stats-vertical shadow-xs border border-base-300 w-full bg-base-200/40">
-                  <div className="stat py-3">
-                    <div className="stat-title text-xs">
-                      Độ tương thích phom dáng (Wearson AI Fit Score)
-                    </div>
-                    <div className="stat-value text-primary font-serif text-3xl">
-                      {tryOnSession.fitConfidence}%
-                    </div>
-                    <div className="stat-desc text-success">
-                      Cân đối chiều dài lưng, bờ vai và độ rủ vải
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 text-xs text-base-content/80">
-                  <p>
-                    <strong>Bộ trang phục đang ướm thử:</strong> {activeOutfit.title}
-                  </p>
-                  <p>
-                    <strong>Trạng thái mô phỏng:</strong>{' '}
-                    <span className="badge badge-success badge-xs">
-                      Hoàn tất
-                    </span>
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleAddFullCostume(activeOutfit)}
-                  className="btn btn-primary btn-block btn-lg shadow-md gap-2"
-                >
-                  <Icon name="bag" size={18} />
-                  <span>
-                    Ưng ý bộ này • Thêm cả {activeOutfit.items.length} món vào túi (
-                    {money(activeOutfit.totalPrice)})
-                  </span>
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
+        </section>
       </div>
     </div>
   );

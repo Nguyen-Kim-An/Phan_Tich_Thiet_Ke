@@ -123,6 +123,8 @@ export interface StylistPreferences {
   fitGoal: string;
   budgetLimit: number;
   preferredColors: string[];
+  preferredMaterials: string[];
+  preferredSize?: string;
   rawVoiceNote?: string;
 }
 
@@ -155,8 +157,8 @@ export interface StylistSession {
   userId?: string;
   userPhotoUrl: string;
   inputMode: 'quiz' | 'voice';
-  bodyShape: string;
-  bodyProfile: BodyAnalysisProfile;
+  bodyShape?: string;
+  bodyProfile?: BodyAnalysisProfile;
   occasion: string;
   styleVibe: string;
   budgetLimit: number;
@@ -268,6 +270,9 @@ export interface StylistRequest {
     styleVibe: string;
     fitGoal: string;
     budgetLimit: number;
+    preferredMaterials?: string[];
+    preferredColors?: string[];
+    preferredSize?: string;
   };
   voiceText?: string;
 }

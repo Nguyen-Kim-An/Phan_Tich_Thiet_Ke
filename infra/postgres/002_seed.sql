@@ -2,13 +2,13 @@ INSERT INTO users (user_id,email,password_hash,full_name,role) VALUES
 ('10000000-0000-0000-0000-000000000001','admin@smartfashion.vn',crypt('Admin123!',gen_salt('bf')),'Quản trị SmartFashion','admin'),
 ('10000000-0000-0000-0000-000000000002','linh@example.com',crypt('Customer123!',gen_salt('bf')),'Nguyễn Hà Linh','customer');
 
-INSERT INTO categories (category_id,name,parent_id) VALUES
-('20000000-0000-0000-0000-000000000001','Áo',NULL),
-('20000000-0000-0000-0000-000000000002','Quần',NULL),
-('20000000-0000-0000-0000-000000000003','Váy',NULL),
-('20000000-0000-0000-0000-000000000004','Áo khoác',NULL),
-('20000000-0000-0000-0000-000000000005','Phụ kiện',NULL),
-('20000000-0000-0000-0000-000000000006','Áo sơ mi','20000000-0000-0000-0000-000000000001');
+INSERT INTO categories (category_id,name,parent_id,slug) VALUES
+('20000000-0000-0000-0000-000000000001','Áo',NULL,'ao'),
+('20000000-0000-0000-0000-000000000002','Quần',NULL,'quan'),
+('20000000-0000-0000-0000-000000000003','Váy',NULL,'vay'),
+('20000000-0000-0000-0000-000000000004','Áo khoác',NULL,'ao-khoac'),
+('20000000-0000-0000-0000-000000000005','Phụ kiện',NULL,'phu-kien'),
+('20000000-0000-0000-0000-000000000006','Áo sơ mi','20000000-0000-0000-0000-000000000001','ao-so-mi');
 
 INSERT INTO products (product_id,category_id,name,base_price,description,status) VALUES
 ('30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000006','Sơ mi Linen Form Rộng',690000,'Linen nhẹ, phom thả và đường may tối giản.','active'),
