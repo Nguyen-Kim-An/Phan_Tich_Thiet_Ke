@@ -10,16 +10,27 @@ import { Icon } from './icons';
 export function ProductCard({
   product,
   index = 0,
+  rank,
+  badges,
 }: {
   product: Product;
   index?: number;
+  rank?: number;
+  badges?: string[];
 }) {
   const [liked, setLiked] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const dispatch = useDispatch();
-  const variant = product.variants[0];
+  const inStockVariant =
+    product.variants.find((v) => v.stock > 0) ?? product.variants[0];
+  const isOutOfStock = product.variants.every((v) => v.stock <= 0);
+  const explanationBadges = badges ?? product.badges ?? [];
 
   return (
-    <article className="card bg-base-100 border border-base-300 overflow-hidden group hover:shadow-md transition-all duration-300">
+    <article
+      onMouseEnter={() => setHovered(true)}
+      className="card bg-base-100 border border-base-300 overflow-hidden group hover:shadow-md transition-all duration-300"
+    >
       <figure className="relative aspect-[4/5] bg-base-200 overflow-hidden m-0">
         <Link
           href={`/product/${product.productId}`}
@@ -29,22 +40,33 @@ export function ProductCard({
           <img
             src={product.image}
             alt={product.name}
+            loading={index < 6 ? 'eager' : 'lazy'}
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          {product.imageAlt && (
+          {hovered && product.imageAlt && product.imageAlt !== product.image && (
             <img
               src={product.imageAlt}
               alt={`${product.name}, góc nhìn khác`}
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300"
             />
           )}
         </Link>
 
-        {product.match && (
-          <span className="badge badge-primary badge-sm absolute top-3 left-3 shadow-xs font-medium">
-            Khớp {product.match}%
-          </span>
-        )}
+        {/* Top-left Match Score Badge */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1">
+          {product.match && (
+            <span className="badge badge-primary badge-sm shadow-xs font-medium">
+              {rank && rank <= 12 ? `#${rank} • ` : ''}Phù hợp {product.match}%
+            </span>
+          )}
+          {isOutOfStock && (
+            <span className="badge badge-error badge-sm shadow-xs font-medium">
+              Hết hàng
+            </span>
+          )}
+        </div>
 
         <button
           type="button"
@@ -57,21 +79,23 @@ export function ProductCard({
           <Icon name="heart" size={16} className={liked ? 'fill-current' : ''} />
         </button>
 
-        {variant && (
+        {inStockVariant && !isOutOfStock && (
           <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0">
             <button
               type="button"
               className="btn btn-neutral btn-sm w-full shadow-md gap-2"
-              onClick={() => dispatch(cartActions.add({ product, variant }))}
+              onClick={() =>
+                dispatch(cartActions.add({ product, variant: inStockVariant }))
+              }
             >
               <Icon name="plus" size={16} />
-              <span>Thêm nhanh</span>
+              <span>Thêm nhanh ({inStockVariant.size})</span>
             </button>
           </div>
         )}
       </figure>
 
-      <div className="card-body p-4 gap-1">
+      <div className="card-body p-4 gap-1.5">
         <div className="flex justify-between items-start gap-2">
           <Link
             href={`/product/${product.productId}`}
@@ -81,13 +105,26 @@ export function ProductCard({
               {product.name}
             </h3>
             <p className="text-xs text-base-content/60 mt-0.5">
-              {product.category}
+              {product.category} • Đánh giá {product.rating}/5 ({product.soldCount} đã bán)
             </p>
           </Link>
           <span className="text-sm font-semibold text-base-content whitespace-nowrap">
             {money(product.price)}
           </span>
         </div>
+
+        {explanationBadges.length > 0 && (
+          <div className="flex flex-wrap gap-1 pt-1">
+            {explanationBadges.map((b) => (
+              <span
+                key={b}
+                className="badge badge-soft badge-primary badge-xs text-[10px]"
+              >
+                {b}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </article>
   );

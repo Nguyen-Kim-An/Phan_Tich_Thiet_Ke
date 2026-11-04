@@ -44,8 +44,8 @@ export default function Home() {
                   href="/try-on"
                   className="btn btn-outline border-white/40 text-white hover:bg-white/10 hover:border-white text-base gap-2"
                 >
-                  <Icon name="spark" size={16} />
-                  <span>Thử đồ AI</span>
+                  <Icon name="camera" size={16} />
+                  <span>Phòng thử đồ trực tuyến</span>
                 </Link>
               </div>
             </div>
@@ -186,9 +186,8 @@ export default function Home() {
         <div className="card bg-primary text-primary-content overflow-hidden shadow-2xl border border-primary/30">
           <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
             <div className="lg:col-span-7 p-8 sm:p-14 space-y-6">
-              <span className="badge badge-accent badge-outline gap-1.5 font-medium">
-                <Icon name="spark" size={14} />
-                Stylist AI thế hệ mới
+              <span className="badge badge-accent badge-outline font-medium">
+                Tìm kiếm & Tư vấn Đa phương thức
               </span>
               <h2 className="font-serif text-3xl sm:text-5xl font-normal leading-tight">
                 Bắt đầu bằng một cảm giác,
@@ -234,8 +233,7 @@ export default function Home() {
               className="w-full h-full object-cover"
             />
             <div className="absolute top-4 left-4">
-              <span className="badge badge-neutral gap-1.5 shadow-sm text-xs">
-                <Icon name="spark" size={13} />
+              <span className="badge badge-neutral shadow-sm text-xs">
                 Thử đồ trực tuyến
               </span>
             </div>

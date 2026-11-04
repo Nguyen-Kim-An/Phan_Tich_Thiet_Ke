@@ -110,8 +110,7 @@ export default function RootLayout({
                   </span>
                   <ul className="space-y-2 text-sm text-neutral-content/80">
                     <li>
-                      <Link href="/try-on" className="hover:text-accent transition-colors flex items-center gap-1.5">
-                        <Icon name="spark" size={14} className="text-accent" />
+                      <Link href="/try-on" className="hover:text-accent transition-colors">
                         Phòng thử đồ ảo
                       </Link>
                     </li>

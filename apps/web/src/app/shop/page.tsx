@@ -3,7 +3,13 @@ import { ShopCatalog } from '@/components/shop-catalog';
 export default async function Shop({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; mode?: string; category?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    mode?: string;
+    category?: string;
+    boxCat?: string;
+    boxLabel?: string;
+  }>;
 }) {
   const params = await searchParams;
   return (
@@ -11,6 +17,8 @@ export default async function Shop({
       initialQuery={params.q ?? ''}
       initialMode={params.mode ?? ''}
       initialCategory={params.category ?? ''}
+      initialBoxCat={params.boxCat ?? ''}
+      initialBoxLabel={params.boxLabel ?? ''}
     />
   );
 }

@@ -16,6 +16,8 @@ export function ProductPurchase({ product }: { product: Product }) {
 
   if (!variant) return null;
 
+  const isOutOfStock = variant.stock <= 0;
+
   return (
     <div className="space-y-6 pt-4 border-t border-base-300">
       {/* Color Display */}
@@ -42,6 +44,7 @@ export function ProductPurchase({ product }: { product: Product }) {
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Kích cỡ">
           {product.variants.map((item) => {
             const isSelected = item.variantId === variant.variantId;
+            const itemOut = item.stock <= 0;
             return (
               <button
                 key={item.variantId}
@@ -49,7 +52,11 @@ export function ProductPurchase({ product }: { product: Product }) {
                 role="radio"
                 aria-checked={isSelected}
                 className={`btn btn-sm min-w-12 ${
-                  isSelected ? 'btn-neutral' : 'btn-outline border-base-300'
+                  isSelected
+                    ? 'btn-neutral'
+                    : itemOut
+                    ? 'btn-outline border-base-300 opacity-50 line-through'
+                    : 'btn-outline border-base-300'
                 }`}
                 onClick={() => setVariantId(item.variantId)}
               >
@@ -64,13 +71,19 @@ export function ProductPurchase({ product }: { product: Product }) {
       <div className="flex items-center gap-2 text-xs text-base-content/70">
         <span
           className={`status status-xs ${
-            variant.stock <= 5 ? 'status-warning' : 'status-success'
+            isOutOfStock
+              ? 'status-error'
+              : variant.stock <= 5
+              ? 'status-warning'
+              : 'status-success'
           }`}
         />
         <span>
-          {variant.stock <= 5
-            ? `Chỉ còn ${variant.stock} sản phẩm trong kho`
-            : 'Còn hàng — sẵn sàng giao'}
+          {isOutOfStock
+            ? 'Tạm hết hàng cho kích cỡ này'
+            : variant.stock <= 5
+            ? `Chỉ còn ${variant.stock} sản phẩm trong kho (Mã SKU: ${variant.sku})`
+            : `Còn hàng (${variant.stock} sản phẩm) — sẵn sàng giao ngay`}
         </span>
       </div>
 
@@ -78,19 +91,28 @@ export function ProductPurchase({ product }: { product: Product }) {
       <div className="space-y-3 pt-2">
         <button
           type="button"
-          className="btn btn-primary btn-block text-base shadow-md gap-2"
-          onClick={() => dispatch(cartActions.add({ product, variant }))}
+          disabled={isOutOfStock}
+          className="btn btn-primary btn-block text-base shadow-md gap-2 disabled:btn-disabled"
+          onClick={() => {
+            if (!isOutOfStock) {
+              dispatch(cartActions.add({ product, variant }));
+            }
+          }}
         >
-          <span>Thêm vào túi mua sắm</span>
-          <Icon name="bag" size={18} />
+          <span>
+            {isOutOfStock
+              ? 'Tạm hết hàng — Vui lòng chọn size khác'
+              : 'Thêm vào túi mua sắm'}
+          </span>
+          {!isOutOfStock && <Icon name="bag" size={18} />}
         </button>
 
         <Link
           href={`/try-on?variant=${variant.variantId}`}
           className="btn btn-outline btn-block text-primary border-primary/40 hover:bg-primary/10 hover:border-primary gap-2"
         >
-          <Icon name="spark" size={16} />
-          <span>Thử trang phục này với AI</span>
+          <Icon name="camera" size={16} />
+          <span>Thử trực tiếp món này với Wearson AI</span>
         </Link>
       </div>
     </div>

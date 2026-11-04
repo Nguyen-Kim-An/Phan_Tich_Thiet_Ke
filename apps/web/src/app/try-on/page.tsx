@@ -1,14 +1,21 @@
 'use client';
 
+import Link from 'next/link';
 import { useRef, useState } from 'react';
-import { products } from '@/lib/catalog';
+import { useDispatch } from 'react-redux';
+import { products, money } from '@/lib/catalog';
+import { cartActions } from '@/store/store';
+import { stylistController } from '@/services/stylist-orchestrator';
 import { Icon } from '@/components/icons';
 
 export default function TryOn() {
+  const dispatch = useDispatch();
   const tryable = products.filter((p) =>
-    ['ao', 'vay', 'ao-khoac'].includes(p.categorySlug)
+    ['ao', 'vay', 'ao-khoac', 'quan'].includes(p.categorySlug)
   );
-  const [image, setImage] = useState<string>();
+  const [image, setImage] = useState<string>(tryable[0]?.image || '');
+  const [outPreviewImage, setOutPreviewImage] = useState<string | null>(null);
+  const [showOriginal, setShowOriginal] = useState(false);
   const [product, setProduct] = useState(tryable[0]);
   const [status, setStatus] = useState<'idle' | 'working' | 'done'>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -16,34 +23,42 @@ export default function TryOn() {
   const handleChoose = (file?: File) => {
     if (file) {
       setImage(URL.createObjectURL(file));
+      setOutPreviewImage(null);
       setStatus('idle');
     }
   };
 
-  const runTryOn = () => {
+  const runTryOn = async () => {
     if (!image) {
       fileInputRef.current?.click();
       return;
     }
     setStatus('working');
-    setTimeout(() => {
-      setStatus('done');
-    }, 2200);
+    setShowOriginal(false);
+    const session = await stylistController.tryOnProduct(image, product);
+    setOutPreviewImage(session.resultImageUrl);
+    setStatus('done');
   };
+
+  const activeVariant =
+    product.variants.find((v) => v.stock > 0) || product.variants[0];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
       {/* Page Header */}
       <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
-        <span className="badge badge-primary badge-outline gap-1.5 font-medium mb-3">
-          <Icon name="spark" size={14} />
-          Phòng thử đồ ảo MaisonAI
+        <span className="text-xs uppercase tracking-widest text-primary font-semibold block mb-2">
+          Phòng Thử Đồ Trực Tuyến • Wearson AI Studio
         </span>
         <h1 className="font-serif text-4xl sm:text-6xl font-normal text-neutral mb-3">
           Thấy mình trong lựa chọn mới.
         </h1>
         <p className="text-sm sm:text-base text-base-content/70">
-          Chụp hoặc tải ảnh toàn thân với ánh sáng rõ và nền đơn giản để AI tái tạo tỷ lệ cơ thể và độ rủ trang phục chuẩn xác nhất.
+          Ướm thử từng thiết kế lẻ hoặc chuyển sang{' '}
+          <Link href="/outfits" className="text-primary underline font-medium">
+            Stylist Cá Nhân Phối Trọn Bộ Trang Phục
+          </Link>{' '}
+          để Wearson AI tái tạo tỷ lệ cơ thể và độ rủ trang phục chuẩn xác nhất.
         </p>
       </div>
 
@@ -54,17 +69,21 @@ export default function TryOn() {
           {image ? (
             <div className="relative w-full h-full min-h-[480px] flex items-center justify-center">
               <img
-                src={image}
-                alt="Ảnh cơ thể người dùng"
-                className="max-h-[560px] max-w-full object-contain rounded-field"
+                src={
+                  status === 'done' && outPreviewImage && !showOriginal
+                    ? outPreviewImage
+                    : image
+                }
+                alt="Kết quả thử đồ Wearson AI"
+                className="max-h-[560px] max-w-full object-contain rounded-field shadow-md"
               />
 
               {/* Garment Overlay / Processing Effect */}
               {status === 'working' && (
-                <div className="absolute inset-0 bg-neutral/70 backdrop-blur-xs flex flex-col items-center justify-center text-neutral-content p-6 rounded-field animate-in fade-in">
+                <div className="absolute inset-0 bg-neutral/70 backdrop-blur-xs flex flex-col items-center justify-center text-neutral-content p-6 rounded-field">
                   <span className="loading loading-spinner loading-lg text-primary mb-4" />
                   <h3 className="font-serif text-xl mb-1">
-                    Đang khớp phom dáng và chất liệu...
+                    Wearson AI đang khớp phom dáng và chất liệu...
                   </h3>
                   <p className="text-xs text-neutral-content/70">
                     Mô phỏng trọng lực và độ co giãn của vải trên tỷ lệ cơ thể.
@@ -72,22 +91,35 @@ export default function TryOn() {
                 </div>
               )}
 
-              {/* Done Preview Badge */}
+              {/* Done Preview Badge + Compare */}
               {status === 'done' && (
-                <div className="absolute bottom-4 inset-x-4 flex justify-between items-center bg-base-100/95 backdrop-blur-md p-3.5 rounded-box border border-base-300 shadow-lg">
+                <div className="absolute bottom-4 inset-x-4 flex flex-wrap justify-between items-center gap-2 bg-base-100/95 backdrop-blur-md p-3.5 rounded-box border border-base-300 shadow-lg">
                   <div className="flex items-center gap-2">
-                    <span className="badge badge-success badge-sm">✓ Đã thử</span>
+                    <span className="badge badge-success badge-sm">
+                      Wearson AI 96%
+                    </span>
                     <span className="text-xs font-medium text-base-content">
-                      Đang xem: {product.name}
+                      Đang mặc thử: {product.name}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-xs text-primary"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Đổi ảnh khác
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-xs"
+                      onClick={() => setShowOriginal(!showOriginal)}
+                    >
+                      {showOriginal
+                        ? 'Xem ảnh đã mặc thử'
+                        : 'So sánh với ảnh gốc'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs text-primary"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Đổi ảnh khác
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -127,21 +159,27 @@ export default function TryOn() {
 
         {/* Right Garment Selector & Execution Controls */}
         <div className="lg:col-span-5 space-y-6">
-          <div>
-            <span className="text-xs uppercase tracking-wider text-primary font-semibold block mb-1">
-              Bước 2
-            </span>
-            <h2 className="font-serif text-2xl font-normal text-neutral">
-              Chọn trang phục muốn thử
-            </h2>
-            <p className="text-xs text-base-content/60 mt-1">
-              Chọn từ bộ sưu tập mùa mới để xem trang phục hiển thị thế nào.
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-xs uppercase tracking-wider text-primary font-semibold block mb-1">
+                Danh mục thiết kế ({tryable.length} mẫu)
+              </span>
+              <h2 className="font-serif text-2xl font-normal text-neutral">
+                Chọn trang phục muốn thử
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="btn btn-outline btn-xs"
+            >
+              Tải ảnh cá nhân
+            </button>
           </div>
 
           {/* Garments Grid */}
           <div className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
-            {tryable.slice(0, 8).map((p) => {
+            {tryable.slice(0, 24).map((p) => {
               const isSelected = p.productId === product.productId;
               return (
                 <button
@@ -161,6 +199,7 @@ export default function TryOn() {
                     <img
                       src={p.image}
                       alt={p.name}
+                      loading="lazy"
                       className="w-full h-full object-cover"
                     />
                     {isSelected && (
@@ -174,7 +213,7 @@ export default function TryOn() {
                       {p.name}
                     </p>
                     <span className="text-xs text-base-content/60">
-                      {p.category}
+                      {p.category} • {money(p.price)}
                     </span>
                   </div>
                 </button>
@@ -182,7 +221,7 @@ export default function TryOn() {
             })}
           </div>
 
-          {/* Action Button */}
+          {/* Action Buttons */}
           <div className="space-y-3 pt-2">
             <button
               type="button"
@@ -193,25 +232,42 @@ export default function TryOn() {
               {status === 'working' ? (
                 <>
                   <span className="loading loading-spinner loading-sm" />
-                  <span>Đang xử lý tạo dáng...</span>
+                  <span>Wearson AI đang ghép trang phục...</span>
                 </>
               ) : (
                 <>
-                  <Icon name="spark" size={18} />
+                  <Icon name="camera" size={18} />
                   <span>
-                    {!image
-                      ? 'Tải ảnh và thử ngay'
-                      : status === 'done'
-                      ? 'Thử lại với trang phục khác'
-                      : 'Bắt đầu thử đồ AI'}
+                    {status === 'done'
+                      ? 'Ghép lại với Wearson AI'
+                      : 'Thử trực tiếp với Wearson AI'}
                   </span>
                 </>
               )}
             </button>
 
-            {/* Privacy Alert */}
+            {activeVariant && (
+              <button
+                type="button"
+                onClick={() =>
+                  dispatch(
+                    cartActions.add({ product, variant: activeVariant })
+                  )
+                }
+                className="btn btn-outline btn-block gap-2"
+              >
+                <Icon name="bag" size={16} />
+                <span>
+                  Thêm {product.name} vào túi ({money(product.price)})
+                </span>
+              </button>
+            )}
+
             <div className="alert alert-soft alert-info p-3 text-xs leading-relaxed">
-              <span className="font-semibold">Cam kết bảo mật:</span> Ảnh cá nhân chỉ dùng cho phiên xử lý thử đồ hiện tại và tự động xóa vĩnh viễn sau 24 giờ.
+              <span className="font-semibold">Gợi ý:</span> Bạn muốn trả lời 4 câu hỏi định hướng hoặc nói qua Mumble Voice để phối nguyên bộ 3 món đồ rồi thử cùng lúc?{' '}
+              <Link href="/outfits" className="underline font-semibold">
+                Mở Phòng Tư Vấn Phối Đồ
+              </Link>
             </div>
           </div>
         </div>

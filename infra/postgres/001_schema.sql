@@ -2,7 +2,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
-CREATE TYPE user_role AS ENUM ('customer', 'staff', 'admin');
+CREATE TYPE user_role AS ENUM ('customer', 'admin');
 CREATE TYPE product_status AS ENUM ('draft', 'active', 'archived');
 CREATE TYPE order_status AS ENUM ('new', 'paid', 'confirmed', 'shipping', 'completed', 'cancelled');
 CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'failed', 'refunded');
@@ -21,8 +21,10 @@ CREATE TABLE users (
 
 CREATE TABLE categories (
   category_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name varchar(120) NOT NULL,
   parent_id uuid REFERENCES categories(category_id) ON DELETE RESTRICT,
+  slug varchar(120) NOT NULL UNIQUE,
+  name varchar(120) NOT NULL,
+  description text NOT NULL DEFAULT '',
   UNIQUE (parent_id, name),
   CHECK (parent_id IS NULL OR parent_id <> category_id)
 );
@@ -33,7 +35,13 @@ CREATE TABLE products (
   name varchar(200) NOT NULL,
   base_price numeric(12,2) NOT NULL CHECK (base_price >= 0),
   description text NOT NULL DEFAULT '',
-  status product_status NOT NULL DEFAULT 'draft'
+  sold_count integer NOT NULL DEFAULT 0 CHECK (sold_count >= 0),
+  rating real NOT NULL DEFAULT 4.8 CHECK (rating >= 0 AND rating <= 5),
+  image_url text,
+  image_alt_url text,
+  text_embedding vector(512),
+  image_embedding vector(512),
+  status product_status NOT NULL DEFAULT 'active'
 );
 
 CREATE TABLE product_variants (
@@ -43,6 +51,7 @@ CREATE TABLE product_variants (
   color_code varchar(9) NOT NULL,
   color_name varchar(80) NOT NULL,
   size varchar(30) NOT NULL,
+  price numeric(12,2) NOT NULL DEFAULT 0 CHECK (price >= 0),
   price_override numeric(12,2) CHECK (price_override IS NULL OR price_override >= 0),
   stock_quantity integer NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
   UNIQUE (product_id, color_code, size)
@@ -61,8 +70,77 @@ CREATE UNIQUE INDEX one_primary_product_image
 CREATE UNIQUE INDEX one_primary_variant_image
   ON product_images(variant_id) WHERE is_primary AND variant_id IS NOT NULL;
 
+-- QueryRepresentation & SearchResult (FR1 - FR4)
+CREATE TABLE query_representations (
+  query_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(user_id) ON DELETE SET NULL,
+  modality varchar(20) NOT NULL CHECK (modality IN ('text', 'voice', 'image')),
+  raw_text text NOT NULL DEFAULT '',
+  hard_filters jsonb NOT NULL DEFAULT '{}'::jsonb,
+  soft_tokens jsonb NOT NULL DEFAULT '[]'::jsonb,
+  relaxed_filters jsonb NOT NULL DEFAULT '[]'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE search_results (
+  result_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  query_id uuid NOT NULL REFERENCES query_representations(query_id) ON DELETE CASCADE,
+  product_id uuid NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
+  rank integer NOT NULL CHECK (rank > 0),
+  score real NOT NULL,
+  badges jsonb NOT NULL DEFAULT '[]'::jsonb,
+  UNIQUE (query_id, product_id)
+);
+
+-- StylistSession, Outfit (Costume), OutfitItem & TryOnSession (FR13 & FR14)
+CREATE TABLE stylist_sessions (
+  stylist_session_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(user_id) ON DELETE SET NULL,
+  user_photo_url text NOT NULL,
+  input_mode varchar(20) NOT NULL CHECK (input_mode IN ('quiz', 'voice')),
+  body_shape varchar(80) NOT NULL,
+  preferences jsonb NOT NULL DEFAULT '{}'::jsonb,
+  voice_transcript text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE outfits (
+  outfit_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  stylist_session_id uuid REFERENCES stylist_sessions(stylist_session_id) ON DELETE CASCADE,
+  title varchar(180) NOT NULL,
+  style_tag varchar(80) NOT NULL,
+  occasion varchar(120) NOT NULL DEFAULT '',
+  stylist_note text NOT NULL DEFAULT '',
+  total_price numeric(12,2) NOT NULL DEFAULT 0 CHECK (total_price >= 0),
+  created_by uuid REFERENCES users(user_id) ON DELETE SET NULL
+);
+
+CREATE TABLE outfit_items (
+  outfit_item_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  outfit_id uuid NOT NULL REFERENCES outfits(outfit_id) ON DELETE CASCADE,
+  product_id uuid NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
+  variant_id uuid REFERENCES product_variants(variant_id) ON DELETE SET NULL,
+  slot_role varchar(60) NOT NULL DEFAULT 'Áo chủ đạo',
+  is_main_item boolean NOT NULL DEFAULT false,
+  UNIQUE (outfit_id, product_id)
+);
+
+CREATE TABLE tryon_sessions (
+  session_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  stylist_session_id uuid REFERENCES stylist_sessions(stylist_session_id) ON DELETE SET NULL,
+  user_id uuid REFERENCES users(user_id) ON DELETE CASCADE,
+  user_image_url text NOT NULL,
+  outfit_id uuid REFERENCES outfits(outfit_id) ON DELETE SET NULL,
+  variant_id uuid REFERENCES product_variants(variant_id) ON DELETE RESTRICT,
+  result_image_url text,
+  status tryon_status NOT NULL DEFAULT 'queued',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Orders & OrderItems (FR6, FR7, FR8, FR11)
 CREATE TABLE orders (
   order_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_code varchar(40) NOT NULL UNIQUE,
   user_id uuid NOT NULL REFERENCES users(user_id) ON DELETE RESTRICT,
   total_amount numeric(12,2) NOT NULL CHECK (total_amount >= 0),
   shipping_fee numeric(12,2) NOT NULL DEFAULT 0 CHECK (shipping_fee >= 0),
@@ -89,37 +167,12 @@ CREATE TABLE product_embeddings (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE tryon_sessions (
-  session_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  user_image_url text NOT NULL,
-  variant_id uuid NOT NULL REFERENCES product_variants(variant_id) ON DELETE RESTRICT,
-  result_image_url text,
-  status tryon_status NOT NULL DEFAULT 'queued',
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
 CREATE TABLE user_behavior_logs (
   log_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id uuid REFERENCES users(user_id) ON DELETE SET NULL,
   product_id uuid NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
   action_type behavior_action NOT NULL,
   "timestamp" timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE outfits (
-  outfit_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  title varchar(180) NOT NULL,
-  style_tag varchar(80) NOT NULL,
-  created_by uuid REFERENCES users(user_id) ON DELETE SET NULL
-);
-
-CREATE TABLE outfit_items (
-  outfit_item_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  outfit_id uuid NOT NULL REFERENCES outfits(outfit_id) ON DELETE CASCADE,
-  product_id uuid NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
-  is_main_item boolean NOT NULL DEFAULT false,
-  UNIQUE (outfit_id, product_id)
 );
 
 CREATE TABLE vouchers (
@@ -139,7 +192,10 @@ CREATE TABLE vouchers (
 CREATE INDEX idx_products_category_status ON products(category_id, status);
 CREATE INDEX idx_variants_product ON product_variants(product_id);
 CREATE INDEX idx_orders_user_created ON orders(user_id, created_at DESC);
+CREATE INDEX idx_orders_code ON orders(order_code);
 CREATE INDEX idx_orders_status ON orders(order_status);
+CREATE INDEX idx_search_results_query ON search_results(query_id, rank);
+CREATE INDEX idx_outfits_session ON outfits(stylist_session_id);
 CREATE INDEX idx_behavior_product_time ON user_behavior_logs(product_id, "timestamp" DESC);
 CREATE INDEX idx_behavior_user_time ON user_behavior_logs(user_id, "timestamp" DESC);
 CREATE INDEX idx_embedding_image_hnsw ON product_embeddings USING hnsw (image_embedding vector_cosine_ops);

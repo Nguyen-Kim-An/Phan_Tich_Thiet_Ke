@@ -76,8 +76,7 @@ export function Header() {
                   href="/try-on"
                   className="text-primary font-semibold flex items-center gap-1.5 hover:opacity-80"
                 >
-                  <Icon name="spark" size={15} />
-                  <span>Thử đồ AI</span>
+                  <span>Thử đồ trực tuyến</span>
                 </Link>
               </li>
             </ul>
@@ -171,8 +170,7 @@ export function Header() {
                     onClick={() => setMobileOpen(false)}
                     className="text-primary font-semibold flex items-center gap-2"
                   >
-                    <Icon name="spark" size={16} />
-                    <span>Phòng thử đồ AI</span>
+                    <span>Phòng thử đồ trực tuyến</span>
                   </Link>
                 </li>
               </ul>

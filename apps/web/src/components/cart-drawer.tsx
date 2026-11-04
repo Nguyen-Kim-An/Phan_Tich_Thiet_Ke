@@ -174,7 +174,7 @@ export function CartDrawer() {
                 </div>
                 <p className="text-xs text-base-content/50">
                   {total >= 1500000
-                    ? '🎉 Đơn hàng được miễn phí vận chuyển toàn quốc.'
+                    ? 'Đơn hàng đủ điều kiện miễn phí vận chuyển toàn quốc.'
                     : 'Phí vận chuyển sẽ được tính tại bước thanh toán.'}
                 </p>
               </div>
