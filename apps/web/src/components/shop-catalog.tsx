@@ -148,7 +148,7 @@ export function ShopCatalog({
           </h1>
           <p className="text-sm sm:text-base text-base-content/70 leading-relaxed">
             {activeCategoryObj?.description ??
-              'Tìm kiếm đa phương thức bằng Từ khóa, Giọng nói Mumble Voice, Hình ảnh hoặc Tra cứu nhanh mã vận đơn.'}
+              'Tìm kiếm đa phương thức bằng Từ khóa, Giọng nói Amical AI Voice, Hình ảnh hoặc Tra cứu nhanh mã vận đơn.'}
           </p>
         </div>
       </section>

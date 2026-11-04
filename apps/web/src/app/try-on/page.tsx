@@ -264,7 +264,7 @@ export default function TryOn() {
             )}
 
             <div className="alert alert-soft alert-info p-3 text-xs leading-relaxed">
-              <span className="font-semibold">Gợi ý:</span> Bạn muốn trả lời 4 câu hỏi định hướng hoặc nói qua Mumble Voice để phối nguyên bộ 3 món đồ rồi thử cùng lúc?{' '}
+              <span className="font-semibold">Gợi ý:</span> Bạn muốn trả lời 4 câu hỏi định hướng hoặc nói qua Amical AI Voice để phối nguyên bộ 3 món đồ rồi thử cùng lúc?{' '}
               <Link href="/outfits" className="underline font-semibold">
                 Mở Phòng Tư Vấn Phối Đồ
               </Link>

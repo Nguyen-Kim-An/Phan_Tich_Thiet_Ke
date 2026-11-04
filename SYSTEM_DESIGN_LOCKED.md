@@ -30,7 +30,7 @@ Hệ thống **MaisonAI (SmartFashion)** là một website thương mại điệ
 | Mã FR | Tên tiếng Việt | Tên Use Case tiếng Anh | Mô tả chi tiết |
 |---|---|---|---|
 | **FR1** | Tìm sản phẩm bằng từ khóa | `Search by Keyword` | Nhập câu mô tả tự nhiên (VD: *"áo sơ mi trắng dưới 1.5 triệu"*); hệ thống bóc tách hard filter (danh mục, màu, giá) và soft preference (phong cách, mùa, chất liệu). |
-| **FR2** | Tìm sản phẩm bằng giọng nói | `Search by Voice` | Bật micro hoặc dùng phím tắt Mumble Voice (`Ctrl + Space`) để nói yêu cầu bằng tiếng Việt; hệ thống chuyển thành chữ rồi tìm kiếm. |
+| **FR2** | Tìm sản phẩm bằng giọng nói | `Search by Voice` | Bật micro hoặc dùng phím tắt Amical AI Voice (`Ctrl + Space`) để nói yêu cầu bằng tiếng Việt; hệ thống chuyển thành chữ rồi tìm kiếm. |
 | **FR3** | Tìm sản phẩm bằng hình ảnh | `Search by Image` | Tải ảnh trang phục lên (có thể chọn vùng trang phục trên ảnh hoặc dùng toàn ảnh) để tìm sản phẩm có đặc trưng hình ảnh giống nhất. |
 | **FR4** | Xếp hạng kết quả theo độ phù hợp | `Search Product` | Use case tổng quát kết hợp lọc cứng (hard filter), nới lỏng filter nếu `< 3` kết quả, tìm trên `KeywordIndex` & `VectorIndex`, xếp hạng kèm nhãn giải thích. |
 | **FR5** | Xem chi tiết sản phẩm | `View Product` | Xem ảnh, giá, màu sắc, kích cỡ, chất liệu, số lượng tồn kho và các thông tin bảo quản của sản phẩm. |
@@ -162,7 +162,7 @@ flowchart LR
 |---|---|
 | **Search Product (FR4)** | Use case này cho phép `Customer` tìm sản phẩm theo nhu cầu và nhận danh sách sản phẩm đã xếp hạng theo độ phù hợp kèm nhãn giải thích. |
 | **Search by Keyword (FR1)** | Use case này cho phép `Customer` gõ câu mô tả tự nhiên để lọc cứng (danh mục, màu, giá) và xếp hạng sản phẩm phù hợp nhất. |
-| **Search by Voice (FR2)** | Use case này cho phép `Customer` nói yêu cầu qua micro (Mumble Voice/Web Speech), hệ thống chuyển giọng nói thành văn bản tiếng Việt rồi tìm sản phẩm. |
+| **Search by Voice (FR2)** | Use case này cho phép `Customer` nói yêu cầu qua micro (Amical AI Voice / Web Speech), hệ thống chuyển giọng nói thành văn bản tiếng Việt rồi tìm sản phẩm. |
 | **Search by Image (FR3)** | Use case này cho phép `Customer` tải ảnh lên (chọn vùng trang phục hoặc toàn ảnh) để tìm sản phẩm có đặc trưng hình ảnh giống nhất. |
 | **Consult AI Stylist (FR13)** | Use case này cho phép `Customer` chụp ảnh cơ thể và chia sẻ mong muốn (qua 3–4 câu hỏi mẫu hoặc nói qua mic) để AI phân tích vóc dáng và phối nhiều bộ Costume từ kho hàng. |
 | **Virtual Try-On Costume (FR14)** | Use case này cho phép `Customer` ướm thử trực tiếp bộ Costume hoặc sản phẩm đã chọn lên bức ảnh cơ thể của mình bằng Wearson AI. |
@@ -194,7 +194,7 @@ flowchart LR
 ### 1.2. Kịch bản 2: Tìm bằng giọng nói (`FR2`) và Tìm bằng hình ảnh (`FR3`)
 *Chỉ khác kịch bản chuẩn ở **bước 3** và **bước 4**, các bước 5–8 giữ nguyên:*
 - **Nhánh Giọng nói (`Search by Voice`):**
-  - **Bước 3:** A nhấn nút Micro (hoặc giữ `Ctrl + Space` với Mumble Voice) và nói *"tôi muốn tìm blazer xám mặc đi làm"*.
+  - **Bước 3:** A nhấn nút Micro (hoặc giữ `Ctrl + Space` với Amical AI Voice) và nói *"tôi muốn tìm blazer xám mặc đi làm"*.
   - **Bước 3a:** Hệ thống chuyển giọng nói thành văn bản *"tôi muốn tìm blazer xám mặc đi làm"* và điền vào ô tìm kiếm.
   - **Bước 4:** Hệ thống hiểu Hard filter (`Danh mục = Áo khoác`, `Màu = Xám`) và Soft preference (`Dịp = Công sở`), trả về các mẫu Blazer đứng đầu.
 - **Nhánh Hình ảnh (`Search by Image`):**
@@ -209,7 +209,7 @@ flowchart LR
 4. **Hệ thống** phân tích nhanh bức ảnh, nhận diện đặc điểm hình thể (VD: *Dáng cân đối, tỷ lệ vai–hông hài hòa, hợp phom suông & chiết eo nhẹ*).
 5. **A** chọn **1 trong 2 cách** cung cấp mong muốn:
    - **Cách 5a (Trả lời 4 câu hỏi mẫu):** A lần lượt bấm chọn các phương án mẫu: (1) Dịp: *Công sở & Gặp đối tác* $\rightarrow$ (2) Phong cách: *Thanh lịch, tối giản* $\rightarrow$ (3) Ưu tiên dáng: *Tôn vòng eo & Kéo dài chân* $\rightarrow$ (4) Ngân sách: *Dưới 5 triệu*.
-   - **Cách 5b (Nói qua Mic / Mumble Voice):** A bật nút Mic (hoặc giữ `Ctrl + Space`) và nói: *"Phối giúp tôi mấy bộ đồ đi làm lịch sự, hiện đại, tôn dáng và che bắp tay, ngân sách tầm 5 triệu"*. Hệ thống phiên âm và trích xuất thành các tiêu chí tương đương.
+   - **Cách 5b (Nói qua Mic / Amical AI Voice):** A bật nút Mic (hoặc giữ `Ctrl + Space`) và nói: *"Phối giúp tôi mấy bộ đồ đi làm lịch sự, hiện đại, tôn dáng và che bắp tay, ngân sách tầm 5 triệu"*. Hệ thống phiên âm và trích xuất thành các tiêu chí tương đương.
 6. **Hệ thống (`CostumeMixerService`)** kết hợp thông tin vóc dáng và mong muốn của A để tự động phối **3 bộ Costume hoàn chỉnh** từ các sản phẩm đang còn hàng trong shop (Mỗi bộ gồm: *Áo chủ đạo + Quần/Chân váy + Áo khoác/Phụ kiện*), kèm lời giải thích của Stylist AI cho từng bộ.
 7. **A** ưng ý **Bộ Costume số 1** (*"Thành thị Thanh lịch"*: Blazer Xám đá + Sơ mi Linen Trắng + Quần âu Đen) và nhấn nút **"Thử trực tiếp bộ này với Wearson AI"**.
 8. **Hệ thống (`WearsonTryOnService`)** ghép các món đồ trong Bộ Costume số 1 lên chính bức ảnh mà A đã chụp ở Bước 3 và hiển thị bản xem trước trực quan.
@@ -241,7 +241,7 @@ flowchart TD
 
     %% 3 nhánh nhập liệu
     ModeDecision -- "Keyword (FR1)" --> EnterText["Nhập câu tìm kiếm văn bản"]
-    ModeDecision -- "Voice (FR2)" --> SpeakMic["Nói qua Mic / Mumble Voice (Ctrl+Space)"]
+    ModeDecision -- "Voice (FR2)" --> SpeakMic["Nói qua Mic / Amical AI Voice (Ctrl+Space)"]
     SpeakMic --> Transcribe["Transcribe speech to text (Chuyển thành chữ)"]
     ModeDecision -- "Image (FR3)" --> UploadImg["Tải ảnh trang phục lên"]
     UploadImg --> DetectRegions["Nhận diện vùng đồ & chọn vùng (hoặc toàn ảnh)"]
@@ -301,8 +301,8 @@ flowchart TD
     InputDecision -- "Hướng 1: Trắc nghiệm có mẫu" --> AnswerQuiz["Trả lời 4 câu hỏi mẫu:\n1. Dịp mặc  2. Phong cách\n3. Ưu tiên dáng  4. Ngân sách & Màu"]
     AnswerQuiz --> MergePref(("Merge"))
 
-    %% Nhánh 2: Bật Mic nói (Mumble Voice)
-    InputDecision -- "Hướng 2: Bật Mic nói" --> RecordVoice["Bật Mic / Giữ Ctrl+Space nói mong muốn tiếng Việt"]
+    %% Nhánh 2: Bật Mic nói (Amical AI Voice)
+    InputDecision -- "Hướng 2: Bật Mic nói" --> RecordVoice["Bật Mic / Giữ Ctrl+Space nói mong muốn tiếng Việt qua Amical"]
     RecordVoice --> SpeechToText["Chuyển giọng nói thành văn bản (Transcript)"]
     SpeechToText --> ParseVoicePref["Tách các tiêu chí (Dịp, Phong cách, Dáng, Ngân sách)"]
     ParseVoicePref --> MergePref
@@ -488,10 +488,10 @@ Quy ước ký hiệu phần tử giao diện của PTIT:
 | View Class (Lớp giao diện) | Các phần tử thành phần (`in` / `out` / `sub`) |
 |---|---|
 | **`SearchUI`** | • `inQuery`: Ô nhập từ khóa hoặc mã đơn hàng<br>• `subSearch`: Nút bấm Tìm kiếm |
-| **`VoiceInput`** | • `inVoice`: Lời nói tiếng Việt thu từ micro / Mumble Voice (`Ctrl+Space`)<br>• `outTranscript`: Văn bản phiên âm hiển thị trực tiếp<br>• `subMic`: Nút bật/tắt thu âm |
+| **`VoiceInput`** | • `inVoice`: Lời nói tiếng Việt thu từ micro / Amical AI Voice (`Ctrl+Space`)<br>• `outTranscript`: Văn bản phiên âm hiển thị trực tiếp<br>• `subMic`: Nút bật/tắt thu âm |
 | **`ImageUpload`** | • `inImage`: File ảnh trang phục tải lên<br>• `inSelectedBox`: Vùng trang phục được chọn trên ảnh (`BoundingBox`)<br>• `subUpload`: Nút tải ảnh & xác nhận vùng chọn |
 | **`SearchResultView`** | • `outFilters`: Các điều kiện hệ thống đã hiểu (Danh mục, Màu, Giá)<br>• `outRelaxedNotice`: Thông báo khi bộ lọc được nới lỏng (do `< 3` kết quả)<br>• `outResults`: Danh sách sản phẩm kèm thứ hạng & nhãn giải thích<br>• `subFilter`: Bộ lọc giao diện (Size, Giá, Sắp xếp)<br>• `subProduct`: Link nhấn vào xem chi tiết sản phẩm |
-| **`StylistStudioUI`** | • `inBodyPhoto`: Ảnh chụp trực tiếp từ Webcam hoặc ảnh toàn thân tải lên<br>• `inQuizAnswers`: Các phương án trả lời cho 4 câu hỏi mẫu (Dịp, Phong cách, Dáng, Ngân sách)<br>• `inVoicePrompt`: Lời nói mô tả mong muốn qua Mumble Voice<br>• `outBodyAnalysis`: Kết quả phân tích dáng người & tông da<br>• `outCostumes`: Danh sách 2–3 bộ Costume được phối kèm lời khuyên của AI Stylist<br>• `subGenerateCostumes`: Nút bấm Phân tích & Phối đồ<br>• `subTryOnCostume`: Nút bấm Ướm thử bộ đồ với Wearson AI<br>• `subAddCostume`: Nút thêm nguyên bộ Costume vào giỏ hàng |
+| **`StylistStudioUI`** | • `inBodyPhoto`: Ảnh chụp trực tiếp từ Webcam hoặc ảnh toàn thân tải lên<br>• `inQuizAnswers`: Các phương án trả lời cho 4 câu hỏi mẫu (Dịp, Phong cách, Dáng, Ngân sách)<br>• `inVoicePrompt`: Lời nói mô tả mong muốn qua Amical AI Voice<br>• `outBodyAnalysis`: Kết quả phân tích dáng người & tông da<br>• `outCostumes`: Danh sách 2–3 bộ Costume được phối kèm lời khuyên của AI Stylist<br>• `subGenerateCostumes`: Nút bấm Phân tích & Phối đồ<br>• `subTryOnCostume`: Nút bấm Ướm thử bộ đồ với Wearson AI<br>• `subAddCostume`: Nút thêm nguyên bộ Costume vào giỏ hàng |
 | **`TryOnPreviewView`** | • `outPreviewImage`: Hình ảnh người dùng đang mặc bộ Costume do Wearson AI tạo ra<br>• `subCompare`: Nút chuyển đổi xem ảnh gốc / ảnh mặc thử |
 | **`OrderLookupView`** | • `outOrderInfo`: Thông tin mã đơn, trạng thái, ngày đặt, tổng tiền<br>• `outOrderItems`: Danh sách các sản phẩm trong đơn hàng |
 | **`AdminDashboardUI`** | • `inProductForm`, `inCategoryForm`, `inOrderStatus`: Các ô nhập liệu quản trị<br>• `outMetrics`, `outInventoryTable`, `outOrderList`: Bảng dữ liệu quản trị<br>• `subSaveProduct`, `subSaveCategory`, `subUpdateOrder`: Các nút lưu thay đổi |
@@ -575,7 +575,7 @@ sequenceDiagram
     Orch->>BodySvc: 4. Phân tích tỷ lệ vóc dáng & sắc độ da từ ảnh
     BodySvc-->>Orch: 5. Trả về đặc điểm hình thể (bodyShape, recommendedFit)
 
-    Orch->>IntentSvc: 6. Chuẩn hóa câu trả lời hoặc bóc tách lời nói từ Mumble Voice
+    Orch->>IntentSvc: 6. Chuẩn hóa câu trả lời hoặc bóc tách lời nói từ Amical AI Voice
     IntentSvc-->>Orch: 7. Trả về tiêu chí phối đồ (occasion, styleVibe, fitPreference, budget)
 
     Orch->>Mixer: 8. Yêu cầu phối các bộ Costume phù hợp
@@ -952,8 +952,9 @@ classDiagram
         <<interface>>
         +transcribe(audio: Blob, langHint: String) String
     }
-    class MumbleVoiceAdapter {
-        +String hotkey
+    class AmicalVoiceAdapter {
+        +String appPath
+        +String pushToTalkHotkey
         +transcribe(audio: Blob, langHint: String) String
     }
     class WebSpeechAdapter {
@@ -1002,7 +1003,7 @@ classDiagram
     QueryParser <|.. LlmQueryParser
     ImageEncoder <|.. ColorHistogramEncoder
     ImageEncoder <|.. ClipImageEncoder
-    SpeechToText <|.. MumbleVoiceAdapter
+    SpeechToText <|.. AmicalVoiceAdapter
     SpeechToText <|.. WebSpeechAdapter
     TryOnEngine <|.. WearsonTryOnAdapter
     ProductRepository <|.. JsonProductRepository
@@ -1097,7 +1098,7 @@ sequenceDiagram
     Orch->>BodySvc: 4. analyze(photoUrl)
     BodySvc-->>Orch: 5. bodyProfile (bodyShape, undertone, recommendedFit)
 
-    opt Nếu mode == VOICE (Mumble Voice / Mic)
+    opt Nếu mode == VOICE (Amical AI Voice / Mic)
         Orch->>Parser: 6. parse(voiceText)
         Parser-->>Orch: 7. extractedPreferences (occasion, styleVibe, fitPreference, budget)
     end
@@ -1129,5 +1130,5 @@ Khi bạn xác nhận **Khóa Draft (Lock)**, mã nguồn trong dự án sẽ đ
 |---|---|---|
 | **`model`** | `src/domain/models.ts` | `User`, `Category`, `Product`, `ProductVariant`, `QueryRepresentation`, `SearchResult`, `StylistSession`, `Outfit`, `OutfitItem`, `TryOnSession`, `Order`, `OrderItem`, `BoundingBox`, `Modality`. |
 | **`DAO`** | `src/dao/repositories.ts`<br>`src/dao/indexes.ts` | • `ProductRepository` (Interface) & `JsonProductRepository` (`get`, `findIds`, `subtreeSlugs`, `save`)<br>• `OrderRepository` (`findByCode`, `listAll`, `create`, `updateStatus`)<br>• `VectorIndex` (`add`, `search(vector, k, allowedIds)`)<br>• `KeywordIndex` (`build`, `search(tokens, k, allowedIds)`) |
-| **`controller`** | `src/services/interfaces.ts`<br>`src/services/search-orchestrator.ts`<br>`src/services/stylist-orchestrator.ts` | • Interfaces: `QueryParser`, `ImageEncoder`, `SpeechToText`, `TryOnEngine`<br>• Implementations: `RuleQueryParser`, `ColorHistogramEncoder`, `MumbleVoiceAdapter`, `WebSpeechAdapter`, `WearsonTryOnAdapter`<br>• Services & Orchestrators: `SearchController`, `SearchOrchestrator`, `QueryService`, `SearchService`, `RankingService`, `StylistController`, `StylistOrchestrator`, `BodyAnalysisService`, `CostumeMixerService`. |
-| **`interface` (View)** | `src/components/search-rail.tsx`<br>`src/components/shop-catalog.tsx`<br>`src/app/outfits/page.tsx`<br>`src/app/try-on/page.tsx`<br>`src/app/admin/page.tsx` | • `SearchUI`, `VoiceInput` (hỗ trợ Mumble Voice `Ctrl+Space` & Web Speech), `ImageUpload` (kèm chọn vùng `BoundingBox`)<br>• `SearchResultView` (hiển thị `outFilters`, `outRelaxedNotice` khi nới filter, `badges`)<br>• `OrderLookupView` (hiển thị ngay đơn hàng khi gõ mã đơn `SF-...` vào ô tìm kiếm)<br>• `StylistStudioUI` & `TryOnPreviewView` (Chụp webcam trực tiếp + 4 câu hỏi mẫu hoặc Mic Mumble Voice $\rightarrow$ Phối 3 bộ Costume $\rightarrow$ Ướm thử trực tiếp với Wearson AI)<br>• `AdminDashboardUI` (`Manage Product`, `Manage Category`, `Manage Order`). |
+| **`controller`** | `src/services/interfaces.ts`<br>`src/services/search-orchestrator.ts`<br>`src/services/stylist-orchestrator.ts` | • Interfaces: `QueryParser`, `ImageEncoder`, `SpeechToText`, `TryOnEngine`<br>• Implementations: `RuleQueryParser`, `ColorHistogramEncoder`, `AmicalVoiceAdapter`, `WebSpeechAdapter`, `WearsonTryOnAdapter`<br>• Services & Orchestrators: `SearchController`, `SearchOrchestrator`, `QueryService`, `SearchService`, `RankingService`, `StylistController`, `StylistOrchestrator`, `BodyAnalysisService`, `CostumeMixerService`. |
+| **`interface` (View)** | `src/components/search-rail.tsx`<br>`src/components/shop-catalog.tsx`<br>`src/app/outfits/page.tsx`<br>`src/app/try-on/page.tsx`<br>`src/app/admin/page.tsx` | • `SearchUI`, `VoiceInput` (hỗ trợ Amical AI Voice `Ctrl+Space` & Web Speech), `ImageUpload` (kèm chọn vùng `BoundingBox`)<br>• `SearchResultView` (hiển thị `outFilters`, `outRelaxedNotice` khi nới filter, `badges`)<br>• `OrderLookupView` (hiển thị ngay đơn hàng khi gõ mã đơn `SF-...` vào ô tìm kiếm)<br>• `StylistStudioUI` & `TryOnPreviewView` (Chụp webcam trực tiếp + 4 câu hỏi mẫu hoặc Mic Amical AI Voice $\rightarrow$ Phối 3 bộ Costume $\rightarrow$ Ướm thử trực tiếp với Wearson AI)<br>• `AdminDashboardUI` (`Manage Product`, `Manage Category`, `Manage Order`). |
