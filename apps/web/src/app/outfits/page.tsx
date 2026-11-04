@@ -138,7 +138,8 @@ export default function OutfitsPage() {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
-  const [realtimeMsg, setRealtimeMsg] = useState('Sẵn sàng kết nối tới Decart Lucy VTON 3.6');
+  const [realtimeMsg, setRealtimeMsg] = useState('Sẵn sàng kết nối tới Decart Lucy V-TON 3.5');
+  const [liveLatency, setLiveLatency] = useState(120);
   const [tryOnProcessing, setTryOnProcessing] = useState(false);
   const [tryOnResultImage, setTryOnResultImage] = useState<string | null>(null);
   const [showOriginalCompare, setShowOriginalCompare] = useState(false);
@@ -257,15 +258,20 @@ export default function OutfitsPage() {
     if (chosenTop) setTryOnGarment(chosenTop);
   };
 
-  // Select an item for active slot
+  // Select an item for active slot - Tự động mặc đồ mới ngay trên camera nếu đang mở
   const handleSelectItemForSlot = (slot: SlotKey, item: Product) => {
     if (slot === 'top') setSelectedTop(item);
     else if (slot === 'bottom') setSelectedBottom(item);
     else if (slot === 'outer') setSelectedOuter(item);
     else if (slot === 'acc') setSelectedAcc(item);
 
-    // Also update garment for virtual try-on
+    // Cập nhật trang phục đang thử
     setTryOnGarment(item);
+
+    // BƯỚC 4: Bắn lệnh setImage mới qua Data Channel mà KHÔNG cần kết nối lại camera
+    if (decartControllerRef.current) {
+      decartControllerRef.current.setImage(item.image, `Wearing ${item.name}`);
+    }
   };
 
   // Add full coordinated outfit to bag
@@ -282,18 +288,30 @@ export default function OutfitsPage() {
 
   // Scroll to try on room with current outfit
   const handleGoToTryOn = (garmentToTry?: Product) => {
-    if (garmentToTry) setTryOnGarment(garmentToTry);
+    if (garmentToTry) {
+      setTryOnGarment(garmentToTry);
+      if (decartControllerRef.current) {
+        decartControllerRef.current.setImage(garmentToTry.image, `Wearing ${garmentToTry.name}`);
+      }
+    }
     setTimeout(() => {
       tryOnSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 50);
   };
 
-  // Webcam Controls for Realtime Try-On
+  // Webcam Controls for Realtime Try-On: BƯỚC 3 theo đúng chuẩn Decart Anywear
   const startRealtimeWebcam = async () => {
     setCameraError(null);
     try {
+      const isMobile = window.innerWidth <= 768;
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 720, height: 960 },
+        video: {
+          facingMode: 'user',
+          width: { ideal: isMobile ? 624 : 1088 },
+          height: { ideal: isMobile ? 1088 : 624 },
+          frameRate: { ideal: 30, max: 30 },
+        },
+        audio: false,
       });
       setCameraActive(true);
       setTimeout(() => {
@@ -303,13 +321,22 @@ export default function OutfitsPage() {
         }
       }, 100);
 
-      // Connect to Decart Realtime Controller
+      // Khởi tạo Decart Realtime Controller với remote stream và latency callback
       if (!decartControllerRef.current) {
         decartControllerRef.current = new DecartRealtimeController(
-          undefined,
+          (remoteStream) => {
+            // Nhận luồng video AI đã khoác áo stream ngược về từ Decart
+            if (videoRef.current) {
+              videoRef.current.srcObject = remoteStream;
+              videoRef.current.play().catch(() => {});
+            }
+          },
           (status, message) => {
             setRealtimeConnected(status === 'connected');
             if (message) setRealtimeMsg(message);
+          },
+          (latency) => {
+            setLiveLatency(latency);
           }
         );
       }
@@ -924,7 +951,7 @@ export default function OutfitsPage() {
                     onClick={() => {
                       setTryOnGarment(item);
                       if (decartControllerRef.current) {
-                        decartControllerRef.current.updateGarment(
+                        decartControllerRef.current.setImage(
                           item.image,
                           `Virtual try-on of ${item.name}`
                         );
@@ -978,9 +1005,11 @@ export default function OutfitsPage() {
                   <div className="absolute top-3 left-3 flex flex-col gap-1 text-[11px] bg-black/70 backdrop-blur-md text-white p-2.5 rounded-field border border-white/10">
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                      <span className="font-bold">Decart Lucy VTON 3.6 • Live Stream</span>
+                      <span className="font-bold">Decart Lucy V-TON 3.5 • WebRTC Stream</span>
                     </div>
-                    <span className="text-white/70">Độ trễ: ~118ms • FPS: 30 • HD 720p</span>
+                    <span className="text-white/80">
+                      Độ trễ AI: <strong>~{liveLatency}ms</strong> • FPS: 30 • WebRTC DataChannel Active
+                    </span>
                     <span className="text-emerald-300 text-[10px]">{realtimeMsg}</span>
                   </div>
 

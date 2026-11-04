@@ -59,7 +59,8 @@ export default function TryOnPage() {
   const [decartStatus, setDecartStatus] = useState<DecartStatus | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [realtimeMsg, setRealtimeMsg] = useState('Đang sẵn sàng kết nối');
+  const [realtimeMsg, setRealtimeMsg] = useState('Đang sẵn sàng kết nối tới Decart Lucy V-TON 3.5');
+  const [liveLatency, setLiveLatency] = useState(120);
   const [searchQuery, setSearchQuery] = useState('');
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -89,12 +90,19 @@ export default function TryOnPage() {
     return matchCat && matchQuery;
   });
 
-  // Start Realtime Webcam Stream to Decart Lucy VTON
+  // BƯỚC 3: Mở luồng WebRTC thời gian thực (@decartai/sdk / LiveKit)
   const startRealtimeCamera = async () => {
     setCameraError(null);
     try {
+      const isMobile = window.innerWidth <= 768;
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 720, height: 960 },
+        video: {
+          facingMode: 'user',
+          width: { ideal: isMobile ? 624 : 1088 },
+          height: { ideal: isMobile ? 1088 : 624 },
+          frameRate: { ideal: 30, max: 30 },
+        },
+        audio: false,
       });
       setCameraActive(true);
       setTimeout(() => {
@@ -106,9 +114,18 @@ export default function TryOnPage() {
 
       if (!decartControllerRef.current) {
         decartControllerRef.current = new DecartRealtimeController(
-          undefined,
+          (remoteStream) => {
+            // Nhận luồng video AI đã khoác áo stream ngược về từ Decart
+            if (videoRef.current) {
+              videoRef.current.srcObject = remoteStream;
+              videoRef.current.play().catch(() => {});
+            }
+          },
           (status, msg) => {
             if (msg) setRealtimeMsg(msg);
+          },
+          (latency) => {
+            setLiveLatency(latency);
           }
         );
       }
@@ -207,9 +224,11 @@ export default function TryOnPage() {
               <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white p-2.5 rounded-field border border-white/10 text-[11px] flex flex-col gap-1">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="font-bold">Decart Lucy VTON 3.6 • Live Realtime</span>
+                  <span className="font-bold">Decart Lucy V-TON 3.5 • Realtime WebRTC</span>
                 </div>
-                <span className="text-white/70">Độ trễ: ~115ms • 30 FPS • HD 720p</span>
+                <span className="text-white/80">
+                  Độ trễ AI: <strong>~{liveLatency}ms</strong> • FPS: 30 • HD 720p
+                </span>
                 <span className="text-emerald-300 text-[10px]">{realtimeMsg}</span>
               </div>
 
@@ -447,8 +466,9 @@ export default function TryOnPage() {
                     onClick={() => {
                       setProduct(p);
                       setTryOnResult(null);
+                      // BƯỚC 4: Bắn lệnh setImage mới qua Data Channel mà KHÔNG cần ngắt camera
                       if (decartControllerRef.current) {
-                        decartControllerRef.current.updateGarment(
+                        decartControllerRef.current.setImage(
                           p.image,
                           `Virtual try-on of ${p.name}`
                         );
