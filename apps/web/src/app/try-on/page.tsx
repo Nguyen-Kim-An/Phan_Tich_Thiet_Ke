@@ -13,33 +13,6 @@ import {
   type DecartStatus,
 } from '@/services/decart-client';
 
-const SAMPLE_MODELS = [
-  {
-    id: 'hourglass',
-    name: 'Mẫu 01 (Đồng hồ cát)',
-    badge: 'Tôn vòng eo',
-    photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=720&q=80',
-  },
-  {
-    id: 'pear',
-    name: 'Mẫu 02 (Dáng Quả lê)',
-    badge: 'Cân đối bờ vai',
-    photo: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=720&q=80',
-  },
-  {
-    id: 'rect',
-    name: 'Mẫu 03 (Thanh mảnh)',
-    badge: 'Phom suông hiện đại',
-    photo: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=720&q=80',
-  },
-  {
-    id: 'smart',
-    name: 'Mẫu 04 (Nam lịch lãm)',
-    badge: 'Modern Tailored',
-    photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=720&q=80',
-  },
-];
-
 export default function TryOnPage() {
   const dispatch = useDispatch();
 
@@ -50,7 +23,7 @@ export default function TryOnPage() {
 
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [product, setProduct] = useState(tryable[0]);
-  const [userPhoto, setUserPhoto] = useState<string>(SAMPLE_MODELS[0].photo);
+  const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [tryOnResult, setTryOnResult] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -59,7 +32,7 @@ export default function TryOnPage() {
   const [decartStatus, setDecartStatus] = useState<DecartStatus | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [realtimeMsg, setRealtimeMsg] = useState('Đang sẵn sàng kết nối tới Decart Lucy V-TON 3.5');
+  const [realtimeMsg, setRealtimeMsg] = useState('Đang sẵn sàng kết nối tới Gương Thử Đồ Maison AI');
   const [liveLatency, setLiveLatency] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -126,7 +99,7 @@ export default function TryOnPage() {
             }
           },
           (status, msg) => {
-            if (status === 'error') setCameraError(msg || 'Decart gặp lỗi.');
+            if (status === 'error') setCameraError(msg || 'Maison AI gặp lỗi.');
             if (msg) setRealtimeMsg(msg);
           },
           (latency) => {
@@ -142,7 +115,7 @@ export default function TryOnPage() {
       );
       if (!connected) setCameraActive(false);
     } catch (error) {
-      setCameraError(error instanceof Error ? error.message : 'Không thể mở webcam hoặc kết nối Decart.');
+      setCameraError(error instanceof Error ? error.message : 'Không thể mở webcam hoặc kết nối Maison AI.');
       setCameraActive(false);
     } finally {
       setCameraConnecting(false);
@@ -190,13 +163,13 @@ export default function TryOnPage() {
       <div className="text-center max-w-3xl mx-auto space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider">
           <Icon name="camera" size={14} />
-          <span>Decart AI Virtual Try-On Studio • Lucy VTON 3.5</span>
+          <span>Maison AI Virtual Try-On Studio</span>
         </div>
         <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-neutral font-normal">
           Phòng Thử Đồ Trực Tiếp Realtime
         </h1>
         <p className="text-sm sm:text-base text-base-content/75">
-          Bật webcam để thử quần áo thời gian thực qua Decart AI. Ảnh tải lên hiện chỉ dùng để xem trước; thử đồ từ ảnh tĩnh chưa được hỗ trợ. Bạn cũng có thể mở{' '}
+          Bật webcam để thử quần áo thời gian thực qua Maison AI. Bạn cũng có thể mở{' '}
           <Link href="/outfits" className="text-primary font-semibold underline">
             Phòng Tư Vấn Phối Đồ
           </Link>{' '}
@@ -228,7 +201,7 @@ export default function TryOnPage() {
               {/* Pose Guidance */}
               <div className="absolute inset-8 border-2 border-dashed border-primary/60 rounded-box pointer-events-none flex flex-col justify-between items-center p-4">
                 <span className="badge badge-neutral/90 text-[11px] backdrop-blur-xs">
-                  Đứng cách camera 1.5 - 2 mét để Decart AI bắt trọn dáng người
+                  Đứng cách camera 1.5 - 2 mét để Maison AI bắt trọn dáng người
                 </span>
                 <span className="badge badge-primary badge-xs">
                   Đang thử: {product.name}
@@ -239,7 +212,7 @@ export default function TryOnPage() {
               <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white p-2.5 rounded-field border border-white/10 text-[11px] flex flex-col gap-1">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="font-bold">Decart Lucy V-TON 3.5 • Realtime WebRTC</span>
+                  <span className="font-bold">Maison AI • Realtime WebRTC</span>
                 </div>
                 <span className="text-white/80">
                   Độ trễ AI: <strong>{liveLatency == null ? 'Chưa đo' : `${liveLatency} ms`}</strong>
@@ -284,12 +257,12 @@ export default function TryOnPage() {
             <div className="relative w-full h-full min-h-[480px] flex items-center justify-center">
               <img
                 src={tryOnResult}
-                alt="Kết quả thử đồ Decart AI"
+                alt="Kết quả thử đồ Maison AI"
                 className="max-h-[560px] max-w-full object-contain rounded-field shadow-lg"
               />
               <div className="absolute top-3 left-3">
                 <span className="badge badge-success badge-sm shadow-sm">
-                  Decart Lucy VTON 3.5 Hoàn Tất
+                  Maison AI Hoàn Tất
                 </span>
               </div>
             </div>
@@ -311,7 +284,7 @@ export default function TryOnPage() {
             <div className="text-center p-8 space-y-3">
               <Icon name="camera" size={48} className="mx-auto text-base-content/40" />
               <p className="text-xs text-base-content/60">
-                Bật webcam hoặc chọn người mẫu để bắt đầu.
+                Bật webcam hoặc tải ảnh của bạn lên để bắt đầu thử đồ với Maison AI.
               </p>
             </div>
           )}
@@ -321,7 +294,7 @@ export default function TryOnPage() {
             <div className="absolute inset-0 bg-neutral/70 backdrop-blur-xs flex flex-col items-center justify-center text-neutral-content p-6 z-20">
               <span className="loading loading-spinner loading-lg text-primary mb-3" />
               <h3 className="font-serif text-xl mb-1 text-white">
-                Decart Lucy VTON đang mô phỏng nếp rủ vải...
+                Maison AI đang mô phỏng nếp rủ vải...
               </h3>
               <p className="text-xs text-neutral-content/70">
                 Tính toán trọng lực, góc ánh sáng và độ co giãn chất liệu thật.
@@ -336,20 +309,20 @@ export default function TryOnPage() {
           )}
         </div>
 
-        {/* Right Column (5 cols): Garment Selector & Decart Actions */}
+        {/* Right Column (5 cols): Garment Selector & Try-On Actions */}
         <div className="lg:col-span-5 space-y-5">
-          {/* Decart Status Header */}
+          {/* Status Header */}
           <div className="bg-primary/5 border border-primary/20 rounded-box p-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="badge badge-primary badge-xs">Decart AI</span>
-              <span className="text-xs font-semibold text-primary">Lucy VTON 3.5</span>
+              <span className="badge badge-primary badge-xs">Maison AI</span>
+              <span className="text-xs font-semibold text-primary">Realtime Studio</span>
             </div>
             <span
               className={`badge badge-xs ${
                 decartStatus?.configured ? 'badge-success' : 'badge-neutral'
               }`}
             >
-              {decartStatus?.configured ? 'Đã lưu khóa • Chưa xác minh' : 'Chưa cấu hình / API lỗi'}
+              {decartStatus?.configured ? 'Đã kích hoạt • Sẵn sàng' : 'Chưa cấu hình / API lỗi'}
             </span>
           </div>
 
@@ -401,44 +374,6 @@ export default function TryOnPage() {
                 }
               }}
             />
-          </div>
-
-          {/* Mannequin Model Selection */}
-          <div className="space-y-2 pt-2 border-t border-base-300">
-            <span className="text-xs font-bold text-base-content/80 block">
-              Hoặc chọn người mẫu chuẩn để thử:
-            </span>
-            <div className="grid grid-cols-4 gap-2">
-              {SAMPLE_MODELS.map((m) => {
-                const isSelected = userPhoto === m.photo;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => {
-                      setUserPhoto(m.photo);
-                      setTryOnResult(null);
-                      setCameraError(null);
-                      if (cameraActive) stopRealtimeCamera();
-                    }}
-                    className={`text-left rounded-box p-1 border transition-all text-xs flex flex-col items-center gap-1 ${
-                      isSelected
-                        ? 'border-primary ring-2 ring-primary/30 bg-primary/5'
-                        : 'border-base-300 hover:border-base-content/40 bg-base-200/40'
-                    }`}
-                  >
-                    <img
-                      src={m.photo}
-                      alt={m.name}
-                      className="w-10 h-14 object-cover rounded-field"
-                    />
-                    <span className="text-[10px] truncate w-full text-center font-medium">
-                      {m.name.split(' ')[1]}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
           </div>
 
           {/* Filter Categories for Products */}
@@ -515,24 +450,26 @@ export default function TryOnPage() {
 
           {/* Action Buttons */}
           <div className="space-y-2.5 pt-2 border-t border-base-300">
-            <button
-              type="button"
-              disabled={true}
-              onClick={runDecartTryOnJob}
-              className="btn btn-neutral btn-block btn-lg shadow-md gap-2"
-            >
-              {isProcessing ? (
-                <>
-                  <span className="loading loading-spinner loading-sm" />
-                  <span>Decart Lucy VTON đang xử lý…</span>
-                </>
-              ) : (
-                <>
-                  <Icon name="spark" size={18} />
-                  <span>Thử đồ ảnh tĩnh — Chưa hỗ trợ</span>
-                </>
-              )}
-            </button>
+            {userPhoto && (
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={runDecartTryOnJob}
+                className="btn btn-primary btn-block btn-lg shadow-md gap-2"
+              >
+                {isProcessing ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm" />
+                    <span>Maison AI đang xử lý…</span>
+                  </>
+                ) : (
+                  <>
+                    <Icon name="spark" size={18} />
+                    <span>Mặc Thử "{product.name}" Lên Ảnh</span>
+                  </>
+                )}
+              </button>
+            )}
 
             {tryOnResult && (
               <button
