@@ -70,6 +70,47 @@ CREATE UNIQUE INDEX one_primary_product_image
 CREATE UNIQUE INDEX one_primary_variant_image
   ON product_images(variant_id) WHERE is_primary AND variant_id IS NOT NULL;
 
+-- Product Subclasses (Table-Per-Subclass / Joined Table Inheritance)
+CREATE TABLE clothes (
+  product_id uuid PRIMARY KEY REFERENCES products(product_id) ON DELETE CASCADE,
+  fabric_material varchar(120) NOT NULL DEFAULT '',
+  gender_target varchar(40) NOT NULL DEFAULT 'unisex',
+  clothing_style varchar(80) NOT NULL DEFAULT '',
+  season varchar(80) NOT NULL DEFAULT 'all-season',
+  care_instruction varchar(255) NOT NULL DEFAULT ''
+);
+
+CREATE TABLE footwear (
+  product_id uuid PRIMARY KEY REFERENCES products(product_id) ON DELETE CASCADE,
+  upper_material varchar(120) NOT NULL DEFAULT '',
+  sole_type varchar(80) NOT NULL DEFAULT '',
+  heel_height_cm real NOT NULL DEFAULT 0.0,
+  shoe_type varchar(80) NOT NULL DEFAULT ''
+);
+
+CREATE TABLE accessories (
+  product_id uuid PRIMARY KEY REFERENCES products(product_id) ON DELETE CASCADE,
+  accessory_type varchar(80) NOT NULL DEFAULT '',
+  dimensions varchar(80) NOT NULL DEFAULT '',
+  strap_material varchar(80) NOT NULL DEFAULT '',
+  hardware_color varchar(40) NOT NULL DEFAULT ''
+);
+
+-- Carts & CartItems
+CREATE TABLE carts (
+  cart_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE cart_items (
+  cart_item_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  cart_id uuid NOT NULL REFERENCES carts(cart_id) ON DELETE CASCADE,
+  variant_id uuid NOT NULL REFERENCES product_variants(variant_id) ON DELETE RESTRICT,
+  quantity integer NOT NULL DEFAULT 1 CHECK (quantity > 0),
+  UNIQUE (cart_id, variant_id)
+);
+
 -- QueryRepresentation & SearchResult (FR1 - FR4)
 CREATE TABLE query_representations (
   query_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -102,6 +143,17 @@ CREATE TABLE stylist_sessions (
   preferences jsonb NOT NULL DEFAULT '{}'::jsonb,
   voice_transcript text,
   created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE body_analysis_profiles (
+  profile_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  stylist_session_id uuid NOT NULL UNIQUE REFERENCES stylist_sessions(stylist_session_id) ON DELETE CASCADE,
+  body_shape varchar(80) NOT NULL,
+  shoulder_hip_ratio real NOT NULL DEFAULT 1.0,
+  undertone varchar(40) NOT NULL DEFAULT 'neutral',
+  height_estimate real NOT NULL DEFAULT 165.0,
+  recommended_fit varchar(120) NOT NULL DEFAULT '',
+  avoid_note varchar(255) NOT NULL DEFAULT ''
 );
 
 CREATE TABLE outfits (

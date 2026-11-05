@@ -248,11 +248,11 @@ Layout: Top-to-bottom flow across two swimlanes (Customer on left, System on rig
 
 ## Prompt Figure 2.3 (Comprehensive Analysis Class Diagram — Gộp Core Mua sắm, Tìm kiếm & AI Stylist / Thử đồ Wearson AI)
 - **Loại biểu đồ chọn trong VP:** `Class Diagram`
-- **Mục đích:** Hợp nhất toàn bộ 15 lớp phân tích nghiệp vụ của hệ thống (Danh mục, Sản phẩm, Phân loại, Tìm kiếm Đa phương thức, Giỏ hàng, Đơn hàng, Phiên AI Stylist, Hồ sơ vóc dáng, Bộ phối Costume và Thử đồ Wearson AI) trên một sơ đồ tổng thể, chuẩn mẫu Figure 4.1.
+- **Mục đích:** Hợp nhất toàn bộ các lớp phân tích nghiệp vụ của hệ thống (Danh mục, Sản phẩm với cấu trúc kế thừa phân loại ngành thời trang: Quần áo, Giày dép, Phụ kiện; Tìm kiếm Đa phương thức; Giỏ hàng; Đơn hàng; Phiên AI Stylist; Hồ sơ vóc dáng; Bộ phối Trang phục và Thử đồ Wearson AI) trên một sơ đồ tổng thể, chuẩn mẫu Figure 4.1 và đáp ứng tiêu chí Bảng đen (Rubric ANALYSIS).
 
 ```text
 Create a UML Analysis Class Diagram for the complete SmartFashion E-Commerce, Multimodal Search, AI Stylist Consultation, and Wearson AI Virtual Try-On system.
-This diagram consolidates the core catalog, search query representations, shopping cart, customer orders, AI body profiling, multi-item costume composition, and virtual try-on into a unified business domain model.
+This diagram consolidates the core catalog with specialized product inheritance hierarchy, search query representations, shopping cart, customer orders, AI body profiling, multi-item costume composition, and virtual try-on into a unified business domain model.
 Classes carry pure business meaning (no technical IDs, no foreign keys, no attribute types, no Controller/Service/Repository).
 
 Classes and attributes/methods:
@@ -262,45 +262,59 @@ Classes and attributes/methods:
 2. Category:
    - Attributes: name, slug, description
    - Operations: +subtreeSlugs(), +assignParent(parentCategory)
-3. Product:
+3. Product (Superclass):
    - Attributes: name, handle, basePrice, description, soldCount, rating, imageUrl, status
    - Operations: +isAvailable(), +matchHardFilters(filters), +primaryInStockVariant()
-4. ProductVariant:
+4. Clothing (Subclass inherits from Product):
+   - Attributes: fabricMaterial, genderTarget, clothingStyle, season, careInstruction
+   - Operations: +isSeasonal(season), +matchesFabricPreference(material)
+5. Footwear (Subclass inherits from Product):
+   - Attributes: upperMaterial, soleType, heelHeightCm, shoeType
+   - Operations: +fitsOccasion(occasion), +hasComfortSole()
+6. Accessory (Subclass inherits from Product):
+   - Attributes: accessoryType, dimensions, strapMaterial, hardwareColor
+   - Operations: +canHoldEssentials(), +matchesVibe(vibe)
+7. ProductVariant:
    - Attributes: sku, colorCode, colorName, size, price, stockQuantity
    - Operations: +hasStock(quantity), +deductStock(quantity), +adjustStock(newStock)
-5. QueryRepresentation:
+8. QueryRepresentation:
    - Attributes: rawText, modality, hardFilters, softTokens, relaxedFilters, selectedBox, createdAt
    - Operations: +relaxColorFilter(), +overrideWithUiFilters(uiFilters)
-6. SearchResult:
+9. SearchResult:
    - Attributes: rank, score, badges
    - Operations: +attachExplanationBadge(badge)
-7. Cart:
-   - Attributes: updatedAt
-   - Operations: +addItem(variant, quantity), +addFullCostume(outfit), +removeItem(variant), +calculateSubtotal()
-8. CartItem:
-   - Attributes: quantity
-   - Operations: +updateQuantity(quantity), +lineAmount()
-9. Order:
-   - Attributes: orderCode, totalAmount, shippingFee, orderStatus, paymentStatus, shippingAddress, createdAt
-   - Operations: +calculateTotal(), +updateStatus(newStatus), +markPaid()
-10. OrderItem:
+10. Cart:
+    - Attributes: updatedAt
+    - Operations: +addItem(variant, quantity), +addFullCostume(outfit), +removeItem(variant), +calculateSubtotal()
+11. CartItem:
+    - Attributes: quantity
+    - Operations: +updateQuantity(quantity), +lineAmount()
+12. Order:
+    - Attributes: orderCode, totalAmount, shippingFee, orderStatus, paymentStatus, shippingAddress, createdAt
+    - Operations: +calculateTotal(), +updateStatus(newStatus), +markPaid()
+13. OrderItem:
     - Attributes: productNameSnapshot, colorNameSnapshot, sizeSnapshot, quantity, unitPrice
     - Operations: +lineAmount()
-11. StylistSession:
+14. StylistSession:
     - Attributes: userPhotoUrl, inputMode, occasion, styleVibe, fitGoal, budgetLimit, voiceTranscript, createdAt
     - Operations: +applyQuizAnswers(answers), +applyVoicePrompt(transcript), +selectCostume(outfit)
-12. BodyAnalysisProfile:
+15. BodyAnalysisProfile:
     - Attributes: bodyShape, shoulderHipRatio, undertone, heightEstimate, recommendedFit, avoidNote
     - Operations: +evaluateSilhouette(), +matchesFitGoal(fitGoal)
-13. Outfit:
+16. Outfit:
     - Attributes: title, styleTag, occasion, stylistNote, matchScore, matchBadges, totalPrice
     - Operations: +calculateTotalPrice(), +isWithinBudget(limit), +verifyAllItemsInStock()
-14. OutfitItem:
+17. OutfitItem:
     - Attributes: slotRole, isMainItem
     - Operations: +replaceVariant(variant)
-15. TryOnSession:
+18. TryOnSession:
     - Attributes: userImageUrl, resultImageUrl, status, fitConfidence, drapeNote, createdAt
     - Operations: +synthesizeCompositePreview(), +toggleBeforeAfterComparison()
+
+Inheritance (Generalization):
+- Clothing --|> Product (Generalization with hollow triangle arrowhead)
+- Footwear --|> Product (Generalization with hollow triangle arrowhead)
+- Accessory --|> Product (Generalization with hollow triangle arrowhead)
 
 Relationships and Multiplicities:
 - Category "0..1" -- "0..*" Category : parent of >
@@ -326,7 +340,8 @@ Relationships and Multiplicities:
 - Outfit "0..1" ..> Cart : batch adds to >
 
 Layout:
-- Product and ProductVariant positioned vertically in the central spine.
+- Product placed in the center with its 3 subclasses (Clothing, Footwear, Accessory) directly below it with hollow generalization arrows.
+- ProductVariant connected to Product via composition to the right.
 - Category placed directly above Product.
 - User and Multimodal Search cluster (QueryRepresentation, SearchResult) at top-left.
 - Shopping Cart and Order fulfillment cluster (Cart, CartItem, Order, OrderItem) at bottom-left.
@@ -513,7 +528,7 @@ Packages and Classes:
    - VectorIndex (add, search)
    - KeywordIndex (build, search)
 4. model (Domain Entity Layer):
-   - User, Category, Product, ProductVariant, QueryRepresentation, SearchResult, StylistSession, BodyAnalysisProfile, Outfit, OutfitItem, TryOnSession, Order, OrderItem, BoundingBox
+   - User, Category, Product (Superclass), Clothing (Subclass), Footwear (Subclass), Accessory (Subclass), ProductVariant, Cart, CartItem, QueryRepresentation, SearchResult, StylistSession, BodyAnalysisProfile, Outfit, OutfitItem, TryOnSession, Order, OrderItem, BoundingBox
 Dependencies (All downward <<use>>):
 - interface ..> controller : <<use>>
 - SearchController ..> SearchOrchestrator, OrderRepository : <<use>>
@@ -529,115 +544,195 @@ Layout: Top-to-bottom layers (interface at top, controller in upper-middle, DAO 
 
 ---
 
-## Prompt Figure 3.2 (Physical Data Model - ERD — Chuẩn theo mẫu Figure 4.3 của bạn)
+## Prompt Figure 3.2 (Physical Data Model - ERD — Chuẩn theo mẫu Figure 4.3 của bạn & Rubric DATAMODEL / DataBase revised)
 - **Loại biểu đồ chọn trong VP:** `Entity Relationship Diagram`
+- **Mục đích:** Biểu diễn Data Model vật lý ánh xạ đầy đủ cấu trúc Kế thừa Table-Per-Subclass (Joined Table Inheritance: bảng `products` liên kết `clothes`, `footwear`, `accessories`), Giỏ hàng (`carts`, `cart_items`), Hồ sơ vóc dáng (`body_analysis_profiles`), Đơn hàng kèm Snapshot lịch sử và Tìm kiếm / AI Stylist.
 
 ```text
-Create a Physical Entity Relationship Diagram (ERD) using Crow's Foot notation for the 12 persistent tables of the SmartFashion Multimodal Search, AI Stylist, Virtual Try-On, and Order Management system in PostgreSQL:
+Create a Physical Entity Relationship Diagram (ERD) using Crow's Foot notation for the complete SmartFashion Multimodal Search, AI Stylist, Virtual Try-On, and Order Management system in PostgreSQL.
+The ERD implements Table-Per-Subclass (Joined Table Inheritance) for specialized fashion products, matching the Analysis and Design Class diagrams.
+
 Tables and Columns:
 1. users: user_id (PK uuid), email (varchar, UNIQUE), password_hash (text), full_name (varchar), phone (varchar, nullable), role (varchar), created_at (timestamptz)
 2. categories: category_id (PK uuid), parent_id (FK uuid, nullable), slug (varchar, UNIQUE), name (varchar), description (text)
-3. products: product_id (PK uuid), category_id (FK uuid), name (varchar), base_price (numeric), description (text), sold_count (integer), rating (real), image_url (text), image_alt_url (text), text_embedding (vector), image_embedding (vector), status (varchar)
-4. product_variants: variant_id (PK uuid), product_id (FK uuid), sku (varchar, UNIQUE), color_code (varchar), color_name (varchar), size (varchar), price (numeric), stock_quantity (integer)
-5. query_representations: query_id (PK uuid), user_id (FK uuid, nullable), modality (varchar), raw_text (text), hard_filters (jsonb), soft_tokens (jsonb), relaxed_filters (jsonb), created_at (timestamptz)
-6. search_results: result_id (PK uuid), query_id (FK uuid), product_id (FK uuid), rank (integer), score (real), badges (jsonb)
-7. stylist_sessions: stylist_session_id (PK uuid), user_id (FK uuid, nullable), user_photo_url (text), input_mode (varchar), body_shape (varchar), preferences (jsonb), voice_transcript (text, nullable), created_at (timestamptz)
-8. outfits: outfit_id (PK uuid), stylist_session_id (FK uuid), title (varchar), style_tag (varchar), occasion (varchar), stylist_note (text), total_price (numeric)
-9. outfit_items: outfit_item_id (PK uuid), outfit_id (FK uuid), product_id (FK uuid), variant_id (FK uuid), slot_role (varchar), is_main_item (boolean)
-10. tryon_sessions: session_id (PK uuid), stylist_session_id (FK uuid, nullable), user_id (FK uuid, nullable), outfit_id (FK uuid, nullable), variant_id (FK uuid, nullable), user_image_url (text), result_image_url (text), status (varchar), created_at (timestamptz)
-11. orders: order_id (PK uuid), order_code (varchar, UNIQUE), user_id (FK uuid), total_amount (numeric), shipping_fee (numeric), order_status (varchar), payment_status (varchar), shipping_address (jsonb), created_at (timestamptz)
-12. order_items: order_item_id (PK uuid), order_id (FK uuid), variant_id (FK uuid), quantity (integer), unit_price (numeric)
+3. products (Superclass Table): product_id (PK uuid), category_id (FK uuid), name (varchar), base_price (numeric), description (text), sold_count (integer), rating (real), image_url (text), image_alt_url (text), text_embedding (vector), image_embedding (vector), status (varchar)
+4. clothes (Subclass Table): product_id (PK FK uuid), fabric_material (varchar), gender_target (varchar), clothing_style (varchar), season (varchar), care_instruction (varchar)
+5. footwear (Subclass Table): product_id (PK FK uuid), upper_material (varchar), sole_type (varchar), heel_height_cm (real), shoe_type (varchar)
+6. accessories (Subclass Table): product_id (PK FK uuid), accessory_type (varchar), dimensions (varchar), strap_material (varchar), hardware_color (varchar)
+7. product_variants: variant_id (PK uuid), product_id (FK uuid), sku (varchar, UNIQUE), color_code (varchar), color_name (varchar), size (varchar), price (numeric), stock_quantity (integer)
+8. carts: cart_id (PK uuid), user_id (FK uuid, UNIQUE), updated_at (timestamptz)
+9. cart_items: cart_item_id (PK uuid), cart_id (FK uuid), variant_id (FK uuid), quantity (integer)
+10. query_representations: query_id (PK uuid), user_id (FK uuid, nullable), modality (varchar), raw_text (text), hard_filters (jsonb), soft_tokens (jsonb), relaxed_filters (jsonb), created_at (timestamptz)
+11. search_results: result_id (PK uuid), query_id (FK uuid), product_id (FK uuid), rank (integer), score (real), badges (jsonb)
+12. stylist_sessions: stylist_session_id (PK uuid), user_id (FK uuid, nullable), user_photo_url (text), input_mode (varchar), body_shape (varchar), preferences (jsonb), voice_transcript (text, nullable), created_at (timestamptz)
+13. body_analysis_profiles: profile_id (PK uuid), stylist_session_id (FK uuid, UNIQUE), body_shape (varchar), shoulder_hip_ratio (real), undertone (varchar), height_estimate (real), recommended_fit (varchar), avoid_note (varchar)
+14. outfits: outfit_id (PK uuid), stylist_session_id (FK uuid), title (varchar), style_tag (varchar), occasion (varchar), stylist_note (text), total_price (numeric)
+15. outfit_items: outfit_item_id (PK uuid), outfit_id (FK uuid), product_id (FK uuid), variant_id (FK uuid), slot_role (varchar), is_main_item (boolean)
+16. tryon_sessions: session_id (PK uuid), stylist_session_id (FK uuid, nullable), user_id (FK uuid, nullable), outfit_id (FK uuid, nullable), variant_id (FK uuid, nullable), user_image_url (text), result_image_url (text), status (varchar), created_at (timestamptz)
+17. orders: order_id (PK uuid), order_code (varchar, UNIQUE), user_id (FK uuid), total_amount (numeric), shipping_fee (numeric), order_status (varchar), payment_status (varchar), shipping_address (jsonb), created_at (timestamptz)
+18. order_items: order_item_id (PK uuid), order_id (FK uuid), variant_id (FK uuid), product_name_snapshot (varchar), color_name_snapshot (varchar), size_snapshot (varchar), quantity (integer), unit_price (numeric)
+
 Foreign Key Cardinalities (Crow's Foot):
-- categories (0..1) |o--o{ (0..*) categories
-- categories (1) ||--o{ (0..*) products
-- products (1) ||--|{ (1..*) product_variants
-- users (0..1) |o--o{ (0..*) query_representations
-- query_representations (1) ||--o{ (0..*) search_results
-- products (1) ||--o{ (0..*) search_results
-- users (0..1) |o--o{ (0..*) stylist_sessions
-- stylist_sessions (1) ||--|{ (1..*) outfits
-- outfits (1) ||--|{ (2..*) outfit_items
-- products (1) ||--o{ (0..*) outfit_items
-- product_variants (1) ||--o{ (0..*) outfit_items
-- stylist_sessions (0..1) |o--o{ (0..*) tryon_sessions
-- outfits (0..1) |o--o{ (0..*) tryon_sessions
-- product_variants (0..1) |o--o{ (0..*) tryon_sessions
-- users (1) ||--o{ (0..*) orders
-- orders (1) ||--|{ (1..*) order_items
-- product_variants (1) ||--o{ (0..*) order_items
+- categories (0..1) |o--o{ (0..*) categories : "parent_id"
+- categories (1) ||--o{ (0..*) products : "category_id"
+- products (1) ||--o| (0..1) clothes : "product_id (Inheritance PK-FK)"
+- products (1) ||--o| (0..1) footwear : "product_id (Inheritance PK-FK)"
+- products (1) ||--o| (0..1) accessories : "product_id (Inheritance PK-FK)"
+- products (1) ||--|{ (1..*) product_variants : "product_id"
+- users (1) ||--o| (0..1) carts : "user_id"
+- carts (1) ||--o{ (0..*) cart_items : "cart_id"
+- product_variants (1) ||--o{ (0..*) cart_items : "variant_id"
+- users (0..1) |o--o{ (0..*) query_representations : "user_id"
+- query_representations (1) ||--o{ (0..*) search_results : "query_id"
+- products (1) ||--o{ (0..*) search_results : "product_id"
+- users (0..1) |o--o{ (0..*) stylist_sessions : "user_id"
+- stylist_sessions (1) ||--|| (1) body_analysis_profiles : "stylist_session_id"
+- stylist_sessions (1) ||--|{ (1..*) outfits : "stylist_session_id"
+- outfits (1) ||--|{ (2..*) outfit_items : "outfit_id"
+- products (1) ||--o{ (0..*) outfit_items : "product_id"
+- product_variants (1) ||--o{ (0..*) outfit_items : "variant_id"
+- stylist_sessions (0..1) |o--o{ (0..*) tryon_sessions : "stylist_session_id"
+- outfits (0..1) |o--o{ (0..*) tryon_sessions : "outfit_id"
+- product_variants (0..1) |o--o{ (0..*) tryon_sessions : "variant_id"
+- users (1) ||--o{ (0..*) orders : "user_id"
+- orders (1) ||--|{ (1..*) order_items : "order_id"
+- product_variants (1) ||--o{ (0..*) order_items : "variant_id"
+
+Layout:
+- Place Category at the top.
+- Place products in the upper-center, with clothes, footwear, accessories arranged directly below products with 1-to-(0..1) joined inheritance lines.
+- Place product_variants to the right of products.
+- Place User and Cart / CartItem at top-left.
+- Place Order and OrderItem at bottom-left.
+- Place QueryRepresentation and SearchResult at lower-center.
+- Place StylistSession, BodyAnalysisProfile, Outfit, OutfitItem, and TryOnSession on the right side.
 ```
 
 ---
 
-## Prompt Figure 3.3 (Domain Layer Design Class Diagram — Chuẩn theo mẫu Figure 4.5 của bạn)
+## Prompt Figure 3.3 (Domain Layer Design Class Diagram — Chuẩn theo mẫu Figure 4.5 & Thầy yêu cầu: Class Diagram sinh Data Model ORM)
 - **Loại biểu đồ chọn trong VP:** `Class Diagram`
+- **Mục đích:** Biểu đồ Lớp Miền (Domain Class Diagram) chuẩn hóa toàn bộ các Entity để Visual Paradigm thực hiện ORM Synchronization sinh ra Data Model / ERD. Bao gồm: Stereotype `<<ORM Persistable>>`, cây kế thừa Generalization từ `Product` xuống `Clothing`, `Footwear`, `Accessory`, đầy đủ bội số `1..*` và Role Labels trên mọi mối quan hệ (Khớp 100% mục DATAMODEL trên Bảng đen của Thầy: "class Diagram + [ 1...* / label / ORM ]").
 
 ```text
-Create a UML Design Class Diagram for the Domain layer (package: model) of the SmartFashion E-Commerce platform.
-Every class represents a persistent domain entity with stereotype <<ORM Persistable>>.
+Create a UML Design Class Diagram for the Domain layer (package: model) of the SmartFashion E-Commerce platform to generate the Relational Data Model via Visual Paradigm ORM.
+Every entity class represents a persistent domain entity with stereotype <<ORM Persistable>>.
 All attributes are private (-) with concrete types (String, Integer, Real, Boolean, String[], Real[]).
 All operations are public (+) with exact parameters and return types.
-Object references are drawn as navigable associations with role names instead of foreign keys.
+Object references are drawn as navigable associations with role names and multiplicities on every end.
+Generalization inheritance is drawn from Product to specialized fashion subclasses (Clothing, Footwear, Accessory).
+
 Classes:
 1. User <<ORM Persistable>>:
    - userId: String, fullName: String, email: String, phone: String, role: String, createdAt: String
    + isAdmin(): Boolean
+   + placeOrder(cart: Cart): Order
 2. Category <<ORM Persistable>>:
    - categoryId: String, slug: String, name: String, description: String
    + isRootCategory(): Boolean
+   + subtreeSlugs(): String[]
 3. Product <<ORM Persistable>>:
-   - productId: String, handle: String, name: String, categorySlug: String, basePrice: Integer, description: String, soldCount: Integer, rating: Real, image: String, textEmbedding: Real[], imageEmbedding: Real[]
-   + hasInStockVariant(): Boolean
+   - productId: String, handle: String, name: String, categorySlug: String, basePrice: Integer, description: String, soldCount: Integer, rating: Real, imageUrl: String, status: String
+   + isAvailable(): Boolean
    + primaryVariant(): ProductVariant
-4. ProductVariant <<ORM Persistable>>:
+   + matchHardFilters(filters: String): Boolean
+4. Clothing <<ORM Persistable>>:
+   - fabricMaterial: String, genderTarget: String, clothingStyle: String, season: String, careInstruction: String
+   + isSeasonal(season: String): Boolean
+   + matchesFabricPreference(material: String): Boolean
+5. Footwear <<ORM Persistable>>:
+   - upperMaterial: String, soleType: String, heelHeightCm: Real, shoeType: String
+   + fitsOccasion(occasion: String): Boolean
+   + hasComfortSole(): Boolean
+6. Accessory <<ORM Persistable>>:
+   - accessoryType: String, dimensions: String, strapMaterial: String, hardwareColor: String
+   + canHoldEssentials(): Boolean
+   + matchesVibe(vibe: String): Boolean
+7. ProductVariant <<ORM Persistable>>:
    - variantId: String, sku: String, colorCode: String, colorName: String, size: String, price: Integer, stockQuantity: Integer
    + isInStock(): Boolean
    + adjustStock(newStock: Integer): Boolean
-5. QueryRepresentation <<ORM Persistable>>:
-   - queryId: String, rawText: String, modality: String, hardFiltersJson: String, softTokens: String[], relaxedFilters: String[], vector: Real[], createdAt: String
-   + relaxColorFilter(): Boolean
-   + hasOrderCodePattern(): Boolean
-6. SearchResult <<ORM Persistable>>:
-   - resultId: String, rank: Integer, score: Real, badges: String[]
-   + matchPercentage(): Integer
-7. StylistSession <<ORM Persistable>>:
-   - stylistSessionId: String, userPhotoUrl: String, inputMode: String, bodyShape: String, occasion: String, styleVibe: String, budgetLimit: Integer, voiceTranscript: String, createdAt: String
-   + topRecommendedOutfit(): Outfit
-8. BodyAnalysisProfile <<ORM Persistable>>:
-   - bodyShape: String, shoulderHipRatio: String, undertone: String, heightEstimate: String, recommendedFit: String, avoidNote: String
-9. Outfit <<ORM Persistable>>:
-   - outfitId: String, title: String, styleTag: String, occasion: String, stylistNote: String, matchScore: Integer, matchBadges: String[], totalPrice: Integer
-   + calculateTotalPrice(): Integer
-10. OutfitItem <<ORM Persistable>>:
+8. Cart <<ORM Persistable>>:
+   - cartId: String, updatedAt: String
+   + addItem(variant: ProductVariant, quantity: Integer): void
+   + addFullCostume(outfit: Outfit): void
+   + calculateSubtotal(): Integer
+9. CartItem <<ORM Persistable>>:
+   - cartItemId: String, quantity: Integer
+   + updateQuantity(qty: Integer): void
+   + lineAmount(): Integer
+10. QueryRepresentation <<ORM Persistable>>:
+    - queryId: String, rawText: String, modality: String, hardFiltersJson: String, softTokens: String[], relaxedFilters: String[], vector: Real[], createdAt: String
+    + relaxColorFilter(): Boolean
+    + hasOrderCodePattern(): Boolean
+11. SearchResult <<ORM Persistable>>:
+    - resultId: String, rank: Integer, score: Real, badges: String[]
+    + matchPercentage(): Integer
+    + attachExplanationBadge(badge: String): void
+12. StylistSession <<ORM Persistable>>:
+    - stylistSessionId: String, userPhotoUrl: String, inputMode: String, bodyShape: String, occasion: String, styleVibe: String, budgetLimit: Integer, voiceTranscript: String, createdAt: String
+    + topRecommendedOutfit(): Outfit
+    + applyQuizAnswers(answers: String): void
+13. BodyAnalysisProfile <<ORM Persistable>>:
+    - profileId: String, bodyShape: String, shoulderHipRatio: Real, undertone: String, heightEstimate: Real, recommendedFit: String, avoidNote: String
+    + evaluateSilhouette(): String
+    + matchesFitGoal(fitGoal: String): Boolean
+14. Outfit <<ORM Persistable>>:
+    - outfitId: String, title: String, styleTag: String, occasion: String, stylistNote: String, matchScore: Integer, matchBadges: String[], totalPrice: Integer
+    + calculateTotalPrice(): Integer
+    + isWithinBudget(limit: Integer): Boolean
+15. OutfitItem <<ORM Persistable>>:
     - outfitItemId: String, slotRole: String, isMainItem: Boolean
-11. TryOnSession <<ORM Persistable>>:
+    + replaceVariant(variant: ProductVariant): void
+16. TryOnSession <<ORM Persistable>>:
     - sessionId: String, userImageUrl: String, resultImageUrl: String, status: String, fitConfidence: Integer, drapeNote: String, createdAt: String
-12. Order <<ORM Persistable>>:
+    + synthesizeCompositePreview(): void
+    + toggleBeforeAfterComparison(): void
+17. Order <<ORM Persistable>>:
     - orderId: String, orderCode: String, totalAmount: Integer, shippingFee: Integer, orderStatus: String, paymentStatus: String, shippingAddressJson: String, createdAt: String
     + grandTotal(): Integer
     + updateStatus(status: String): Boolean
-13. OrderItem <<ORM Persistable>>:
-    - orderItemId: String, productName: String, colorName: String, size: String, quantity: Integer, unitPrice: Integer
+18. OrderItem <<ORM Persistable>>:
+    - orderItemId: String, productNameSnapshot: String, colorNameSnapshot: String, sizeSnapshot: String, quantity: Integer, unitPrice: Integer
     + lineAmount(): Integer
-Associations and Navigable Role Names:
+
+Inheritance (Generalization):
+- Clothing --|> Product (Generalization with hollow triangle arrowhead)
+- Footwear --|> Product (Generalization with hollow triangle arrowhead)
+- Accessory --|> Product (Generalization with hollow triangle arrowhead)
+
+Associations, Role Names, and Multiplicities:
 - Category "0..*" --> "0..1 parent" Category
 - Product "0..*" --> "1 category" Category
 - Product "1" *--> "1..* variants" ProductVariant (Composition)
-- QueryRepresentation "0..*" --> "0..1 user" User
+- User "1" --> "0..1 cart" Cart
+- Cart "1" *--> "0..* items" CartItem (Composition)
+- CartItem "0..*" --> "1 selectedVariant" ProductVariant
+- User "1" --> "0..* submittedQueries" QueryRepresentation
 - QueryRepresentation "1" *--> "0..* results" SearchResult (Composition)
 - SearchResult "0..*" --> "1 product" Product
-- StylistSession "0..*" --> "0..1 user" User
+- User "1" --> "0..* requestedSessions" StylistSession
 - StylistSession "1" *--> "1 bodyProfile" BodyAnalysisProfile (Composition)
 - StylistSession "1" *--> "1..* recommendedOutfits" Outfit (Composition)
 - Outfit "1" *--> "2..* items" OutfitItem (Composition)
 - OutfitItem "0..*" --> "1 product" Product
 - OutfitItem "0..*" --> "1 variant" ProductVariant
-- TryOnSession "0..*" --> "0..1 stylistSession" StylistSession
-- TryOnSession "0..*" --> "0..1 outfit" Outfit
-- Order "0..*" --> "1 customer" User
-- Order "1" *--> "1..* items" OrderItem (Composition)
-- OrderItem "0..*" --> "1 variant" ProductVariant
-Layout: Clean modular distribution, Product and ProductVariant at center, Search classes at top-left, Stylist and Outfit classes at top-right, Order classes at bottom.
+- StylistSession "1" --> "0..* previewSessions" TryOnSession
+- TryOnSession "0..*" --> "0..1 wornOutfit" Outfit
+- User "1" --> "0..* placedOrders" Order
+- Order "1" *--> "1..* orderItems" OrderItem (Composition)
+- OrderItem "0..*" --> "1 lockedVariant" ProductVariant
+- Outfit "0..1" ..> Cart : batch adds to >
+
+Layout:
+- Product placed in the center with Clothing, Footwear, Accessory arranged horizontally directly below Product, connected with Generalization arrows.
+- ProductVariant placed to the right of Product with Composition diamond.
+- Category placed directly above Product.
+- User, Cart, CartItem placed at top-left.
+- Order and OrderItem placed at bottom-left.
+- QueryRepresentation and SearchResult placed below User.
+- StylistSession, BodyAnalysisProfile, Outfit, OutfitItem, and TryOnSession placed on the right side.
+- Clean orthogonal lines, balanced distribution, black and white UML style.
 ```
 
 ---

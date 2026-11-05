@@ -391,6 +391,32 @@ classDiagram
         rating
     }
 
+    class Clothing {
+        fabricMaterial
+        genderTarget
+        clothingStyle
+        season
+        careInstruction
+    }
+
+    class Footwear {
+        upperMaterial
+        soleType
+        heelHeightCm
+        shoeType
+    }
+
+    class Accessory {
+        accessoryType
+        dimensions
+        strapMaterial
+        hardwareColor
+    }
+
+    Clothing --|> Product : Kế thừa (Generalization)
+    Footwear --|> Product : Kế thừa (Generalization)
+    Accessory --|> Product : Kế thừa (Generalization)
+
     class ProductVariant {
         sku
         colorName
@@ -673,15 +699,25 @@ flowchart TB
 
 ## 3. Thiết kế Cơ sở Dữ liệu (5 Bước) & Biểu đồ ERD (Chuẩn trang 32–33 `tt_nhichu.pdf`)
 
-### 3.1. Năm bước chuyển từ Entity Class sang Database Tables
-1. **Bước 1 (Mỗi Entity Class thành một Table):** `users`, `categories`, `products`, `product_variants`, `query_representations`, `search_results`, `stylist_sessions`, `outfits`, `outfit_items`, `tryon_sessions`, `orders`, `order_items`.
-2. **Bước 2 (Attribute nguyên thủy thành Cột):** Ví dụ bảng `products` có các cột `name`, `base_price`, `description`, `sold_count`, `rating`, `image_url`, `text_embedding`, `image_embedding`.
+### 3.1. Năm bước chuyển từ Entity Class sang Database Tables (Chuẩn ORM & Kế thừa Table-Per-Subclass)
+1. **Bước 1 (Mỗi Entity Class thành một Table & Xử lý Kế thừa ORM):**
+   - Các bảng thực thể độc lập: `users`, `categories`, `product_variants`, `carts`, `cart_items`, `query_representations`, `search_results`, `stylist_sessions`, `body_analysis_profiles`, `outfits`, `outfit_items`, `tryon_sessions`, `orders`, `order_items`.
+   - **Ánh xạ Kế thừa Sản phẩm (Joined Table Inheritance / Table-Per-Subclass):**
+     - Bảng cha `products`: lưu thuộc tính dùng chung (`name`, `base_price`, `description`, `sold_count`, `rating`, `image_url`, `status`).
+     - Ba bảng con chuyên biệt: `clothes` (thuộc tính quần áo, váy, áo khoác), `footwear` (thuộc tính giày dép), `accessories` (thuộc tính phụ kiện, balo, túi).
+2. **Bước 2 (Attribute nguyên thủy thành Cột):** Ví dụ bảng `clothes` có `fabric_material`, `gender_target`, `clothing_style`, `season`; bảng `footwear` có `upper_material`, `sole_type`, `heel_height_cm`.
 3. **Bước 3 (Biểu diễn quan hệ):**
    - `Category – Product` là `1-n` $\rightarrow$ Giữ 2 bảng.
+   - `Product – Clothes / Footwear / Accessories` là quan hệ kế thừa $1 - (0..1)$ $\rightarrow$ Nối qua khóa chính chia sẻ (`product_id`).
    - `QueryRepresentation – Product` là `n-n` $\rightarrow$ Có bảng trung gian `search_results`.
    - `Outfit – Product` là `n-n` $\rightarrow$ Có bảng trung gian `outfit_items`.
-4. **Bước 4 (Khóa chính & Khóa ngoại):** `id` thành `PRIMARY KEY`. Phía `n` giữ `FOREIGN KEY`: `category_id` trong `products`, `parent_id` trong `categories` (tự tham chiếu cha-con), `query_id` và `product_id` trong `search_results`, `outfit_id` và `product_id` trong `outfit_items`.
-5. **Bước 5 (Loại bỏ dữ liệu dư thừa):** Bảng `search_results` không chép lại tên hay giá sản phẩm mà chỉ giữ `product_id`, `rank`, `score` và `badges`.
+   - `User – Cart` là `1 - 1`, `Cart – CartItem` là `1-n`.
+4. **Bước 4 (Khóa chính & Khóa ngoại):** `id` thành `PRIMARY KEY`.
+   - Bảng con kế thừa: `product_id` trong `clothes`, `footwear`, `accessories` vừa là PK vừa là FK tham chiếu `products(product_id)` với `ON DELETE CASCADE`.
+   - Phía `n` giữ `FOREIGN KEY`: `category_id` trong `products`, `cart_id` trong `cart_items`, `order_id` trong `order_items`.
+5. **Bước 5 (Loại bỏ dữ liệu dư thừa & Lưu Snapshot lịch sử):**
+   - Bảng `search_results` không chép lại giá hay tên mà chỉ giữ `product_id`, `rank`, `score`.
+   - Riêng `order_items` lưu snapshot tên, màu, size, giá tại thời điểm đặt hàng để bảo toàn lịch sử hóa đơn khi danh mục gốc thay đổi.
 
 ### 3.2. Sơ đồ ERD Hoàn chỉnh
 
@@ -689,7 +725,14 @@ flowchart TB
 erDiagram
     CATEGORIES ||--o{ CATEGORIES : "parent_id (Cha - Con)"
     CATEGORIES ||--o{ PRODUCTS : "category_id"
+    PRODUCTS ||--o| CLOTHES : "product_id (Kế thừa Trang phục)"
+    PRODUCTS ||--o| FOOTWEAR : "product_id (Kế thừa Giày dép)"
+    PRODUCTS ||--o| ACCESSORIES : "product_id (Kế thừa Phụ kiện)"
     PRODUCTS ||--|{ PRODUCT_VARIANTS : "product_id"
+
+    USERS ||--o| CARTS : "user_id"
+    CARTS ||--o{ CART_ITEMS : "cart_id"
+    PRODUCT_VARIANTS ||--o{ CART_ITEMS : "variant_id"
 
     USERS ||--o{ QUERY_REPRESENTATIONS : "user_id"
     QUERY_REPRESENTATIONS ||--o{ SEARCH_RESULTS : "query_id"
@@ -728,6 +771,49 @@ erDiagram
         text image_alt_url
         vector text_embedding
         vector image_embedding
+    }
+    CLOTHES {
+        varchar product_id PK,FK
+        varchar fabric_material
+        varchar gender_target
+        varchar clothing_style
+        varchar season
+        varchar care_instruction
+    }
+    FOOTWEAR {
+        varchar product_id PK,FK
+        varchar upper_material
+        varchar sole_type
+        float heel_height_cm
+        varchar shoe_type
+    }
+    ACCESSORIES {
+        varchar product_id PK,FK
+        varchar accessory_type
+        varchar dimensions
+        varchar strap_material
+        varchar hardware_color
+    }
+    CARTS {
+        varchar cart_id PK
+        varchar user_id FK
+        timestamptz updated_at
+    }
+    CART_ITEMS {
+        varchar cart_item_id PK
+        varchar cart_id FK
+        varchar variant_id FK
+        int quantity
+    }
+    BODY_ANALYSIS_PROFILES {
+        varchar profile_id PK
+        varchar stylist_session_id FK
+        varchar body_shape
+        float shoulder_hip_ratio
+        varchar undertone
+        float height_estimate
+        varchar recommended_fit
+        varchar avoid_note
     }
     PRODUCT_VARIANTS {
         varchar variant_id PK
