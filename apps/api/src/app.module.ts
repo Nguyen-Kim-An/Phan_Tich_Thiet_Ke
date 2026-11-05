@@ -9,10 +9,12 @@ import { AiController } from './modules/ai.controller';
 import { AdminController } from './modules/admin.controller';
 import { StylistController } from './modules/stylist.controller';
 import { StylistService } from './modules/stylist.service';
+import { ImageSearchController } from './modules/image-search.controller';
+import { ImageSearchService } from './modules/image-search.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true, envFilePath: ['apps/api/.env', '.env'] }), JwtModule.register({ global: true, secret: process.env.JWT_SECRET ?? 'development-secret-change-before-production', signOptions: { expiresIn: '15m' } })],
-  controllers: [AuthController, CatalogController, CommerceController, AiController, AdminController, StylistController],
-  providers: [DatabaseService, StylistService],
+  controllers: [AuthController, CatalogController, CommerceController, AiController, AdminController, StylistController, ImageSearchController],
+  providers: [DatabaseService, StylistService, ImageSearchService],
 })
 export class AppModule {}

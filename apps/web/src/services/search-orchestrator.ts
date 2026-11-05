@@ -70,7 +70,7 @@ export class QueryService {
     uiOverrides?: Partial<HardFilters>
   ): QueryRepresentation {
     const queryId = `qry-${Date.now()}`;
-    const parsed = this.parser.parse(text || '');
+    const parsed = this.parser.parse(modality === 'image' ? '' : text || '');
 
     const hardFilters: HardFilters = {
       ...parsed.hardFilters,
@@ -149,6 +149,13 @@ export class SearchService {
 
   public retrieve(rep: QueryRepresentation): RetrievalResult {
     this.rebuildIndexes();
+
+    // Synchronous legacy image callers have no pixel descriptor. Do not fabricate
+    // similarity results; the upload API performs the actual image comparison.
+    if (rep.modality === 'image' && rep.vector.length === 0) {
+      return { queryId: rep.queryId, allowedIds: [], isRelaxed: false,
+        keywordScores: new Map(), vectorScores: new Map() };
+    }
 
     // Step 9: Filter by hardFilters
     let allowedIds = this.productRepo.findIds(rep.hardFilters);

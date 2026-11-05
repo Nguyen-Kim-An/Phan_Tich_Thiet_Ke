@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import type { BoundingBox } from '@/domain/models';
 import { Icon } from './icons';
 
@@ -10,6 +10,9 @@ interface ObjectSelectionModalProps {
   boxes: BoundingBox[];
   onConfirm: (selectedBox?: BoundingBox) => void;
   onCancel: () => void;
+  busy?: boolean;
+  detecting?: boolean;
+  error?: string | null;
 }
 
 export function ObjectSelectionModal({
@@ -18,25 +21,31 @@ export function ObjectSelectionModal({
   boxes,
   onConfirm,
   onCancel,
+  busy = false,
+  detecting = false,
+  error,
 }: ObjectSelectionModalProps) {
   const [selectedId, setSelectedId] = useState<string>(boxes[0]?.id || 'full');
 
   const activeBox = boxes.find((b) => b.id === selectedId);
+  const groupId = useId();
+  const [aspectRatio, setAspectRatio] = useState(4 / 5);
+  useEffect(() => { setSelectedId(boxes[0]?.id || 'full'); }, [boxes]);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral/60 backdrop-blur-xs"
+      className="modal modal-open bg-neutral/60 p-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="obj-select-title"
+      aria-labelledby={`${groupId}-title`}
     >
-      <div className="card bg-base-100 border border-base-300 shadow-2xl w-full max-w-2xl overflow-hidden">
+      <div className="modal-box w-full max-w-2xl border border-base-300 p-0">
         <div className="p-4 sm:p-5 border-b border-base-300 flex items-center justify-between bg-base-200/50">
           <div>
             <span className="text-xs uppercase tracking-widest text-primary font-semibold block mb-0.5">
               Tìm kiếm bằng hình ảnh
             </span>
-            <h3 id="obj-select-title" className="font-serif text-xl text-neutral">
+            <h3 id={`${groupId}-title`} className="font-serif text-xl text-neutral">
               Chọn vùng trang phục cần tìm kiếm
             </h3>
           </div>
@@ -44,6 +53,7 @@ export function ObjectSelectionModal({
             type="button"
             className="btn btn-ghost btn-circle btn-sm"
             onClick={onCancel}
+            disabled={busy}
             aria-label="Đóng"
           >
             <Icon name="close" size={18} />
@@ -52,11 +62,13 @@ export function ObjectSelectionModal({
 
         <div className="p-5 grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
           {/* Interactive Image Canvas with Bounding Boxes */}
-          <div className="md:col-span-7 relative rounded-box overflow-hidden bg-base-200 border border-base-300 aspect-[4/5] flex items-center justify-center">
+          <div className="md:col-span-7 relative rounded-box overflow-hidden bg-base-200 border border-base-300"
+            style={{ aspectRatio }}>
             <img
               src={imageUrl}
               alt={fileName}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
+              onLoad={(event) => setAspectRatio(event.currentTarget.naturalWidth / event.currentTarget.naturalHeight)}
             />
             {boxes.map((box) => {
               const isSelected = selectedId === box.id;
@@ -65,6 +77,9 @@ export function ObjectSelectionModal({
                   key={box.id}
                   type="button"
                   onClick={() => setSelectedId(box.id)}
+                  disabled={busy || detecting}
+                  aria-label={`Chọn vùng ${box.label}`}
+                  aria-pressed={isSelected}
                   style={{
                     left: `${box.x}%`,
                     top: `${box.y}%`,
@@ -92,10 +107,13 @@ export function ObjectSelectionModal({
           {/* Right Panel: Detected BoundingBoxes */}
           <div className="md:col-span-5 space-y-4">
             <p className="text-xs text-base-content/70 leading-relaxed">
-              Hệ thống nhận diện <strong>{boxes.length} vùng trang phục</strong> trên bức ảnh của bạn. Hãy chọn món đồ muốn tìm tương đồng hoặc tìm theo toàn bộ bức ảnh:
+              {detecting ? 'AI đang gợi ý các vùng trang phục trong ảnh…' : boxes.length
+                ? `Có ${boxes.length} vùng trang phục được gợi ý. Bấm khung trên ảnh hoặc chọn bên dưới để tìm món tương tự.`
+                : 'Chưa có vùng trang phục rõ ràng. Bạn vẫn có thể tìm theo toàn bộ ảnh.'}
             </p>
 
-            <div className="space-y-2">
+            <fieldset className="space-y-2" disabled={busy || detecting}>
+              <legend className="sr-only">Chọn vùng trang phục</legend>
               {boxes.map((box) => (
                 <label
                   key={box.id}
@@ -107,7 +125,7 @@ export function ObjectSelectionModal({
                 >
                   <input
                     type="radio"
-                    name="inSelectedBox"
+                    name={groupId}
                     className="radio radio-primary radio-xs"
                     checked={selectedId === box.id}
                     onChange={() => setSelectedId(box.id)}
@@ -117,7 +135,7 @@ export function ObjectSelectionModal({
                       {box.label}
                     </div>
                     <div className="text-[11px] text-base-content/60">
-                      Độ khớp nhận diện {Math.round(box.confidence * 100)}%
+                      Vùng AI gợi ý — kiểm tra khung trên ảnh
                     </div>
                   </div>
                 </label>
@@ -132,7 +150,7 @@ export function ObjectSelectionModal({
               >
                 <input
                   type="radio"
-                  name="inSelectedBox"
+                  name={groupId}
                   className="radio radio-primary radio-xs"
                   checked={selectedId === 'full'}
                   onChange={() => setSelectedId('full')}
@@ -142,29 +160,33 @@ export function ObjectSelectionModal({
                     Sử dụng toàn bộ bức ảnh
                   </div>
                   <div className="text-[11px] text-base-content/60">
-                    Tìm theo tổng thể bảng màu & phong cách
+                    AI phân tích trang phục chính trong toàn bộ ảnh
                   </div>
                 </div>
               </label>
-            </div>
+            </fieldset>
 
+            {error && <div role="alert" className="alert alert-warning alert-soft text-sm">{error}</div>}
             <div className="pt-2 space-y-2">
               <button
                 type="button"
                 className="btn btn-primary btn-block btn-sm gap-2"
+                disabled={busy || detecting}
                 onClick={() => onConfirm(selectedId === 'full' ? undefined : activeBox)}
               >
-                <Icon name="search" size={15} />
-                <span>Xác nhận & Tìm kiếm</span>
+                {busy || detecting ? <span className="loading loading-spinner loading-sm" /> : <Icon name="search" size={15} />}
+                <span>{detecting ? 'Đang nhận diện vùng…' : busy ? 'AI đang tìm sản phẩm…' : 'Xác nhận & Tìm kiếm'}</span>
               </button>
               <button
                 type="button"
                 className="btn btn-ghost btn-block btn-xs"
                 onClick={onCancel}
+                disabled={busy}
               >
                 Hủy bỏ
               </button>
             </div>
+            <p className="text-[11px] text-base-content/60">Khung là gợi ý gần đúng từ AI. Ảnh được gửi tới dịch vụ AI để phân tích, không lưu thành tệp trên server.</p>
           </div>
         </div>
       </div>

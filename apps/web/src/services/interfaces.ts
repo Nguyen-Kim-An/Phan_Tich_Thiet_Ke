@@ -204,66 +204,11 @@ export interface ImageEncoder {
   ): number[];
 }
 
+// Legacy synchronous interface: it cannot inspect image pixels. Image searches
+// use /api/image-search instead; never synthesize boxes or vectors from filenames.
 export class ColorHistogramEncoder implements ImageEncoder {
-  public detectObjects(_image: File | string | null): BoundingBox[] {
-    return [
-      {
-        id: 'box-top',
-        label: 'Áo / Trang phục thân trên',
-        categorySlug: 'ao',
-        x: 24,
-        y: 16,
-        width: 52,
-        height: 34,
-        confidence: 0.96,
-      },
-      {
-        id: 'box-outer',
-        label: 'Áo khoác ngoài (Blazer / Coat)',
-        categorySlug: 'ao-khoac',
-        x: 18,
-        y: 14,
-        width: 64,
-        height: 42,
-        confidence: 0.93,
-      },
-      {
-        id: 'box-bottom',
-        label: 'Quần / Chân váy thân dưới',
-        categorySlug: 'quan',
-        x: 26,
-        y: 48,
-        width: 48,
-        height: 44,
-        confidence: 0.94,
-      },
-      {
-        id: 'box-dress',
-        label: 'Đầm / Váy liền thân',
-        categorySlug: 'vay',
-        x: 22,
-        y: 18,
-        width: 56,
-        height: 70,
-        confidence: 0.91,
-      },
-    ];
-  }
-
-  public encode(
-    image: File | string | null,
-    box?: BoundingBox,
-    hintText?: string
-  ): number[] {
-    const fileName =
-      typeof image === 'string'
-        ? image
-        : image && typeof image === 'object' && 'name' in image
-        ? image.name
-        : '';
-    const boxSeed = box ? `${box.label} ${box.categorySlug}` : 'ao vay thanh lich';
-    return computeTextFeatureVector(`${fileName} ${boxSeed} ${hintText || ''}`);
-  }
+  public detectObjects(_image: File | string | null): BoundingBox[] { return []; }
+  public encode(_image: File | string | null, _box?: BoundingBox, _hintText?: string): number[] { return []; }
 }
 
 export class ClipImageEncoder extends ColorHistogramEncoder {}
@@ -289,125 +234,7 @@ export class MumbleVoiceAdapter implements SpeechToText {
   }
 }
 
-export interface ContinuousSpeechController {
-  stop: () => void;
-  isSupported: boolean;
-}
-
-/**
- * Starts a continuous Vietnamese speech recognition session that streams
- * both interim and finalized words into `onTranscriptUpdate` without cutting off
- * after 1 second or 1 word. Automatically restarts if the browser pauses between clauses
- * until `.stop()` is explicitly called by the user.
- */
-export function startContinuousVoiceSession(
-  initialText: string,
-  onTranscriptUpdate: (fullText: string) => void,
-  onListeningChange: (listening: boolean) => void
-): ContinuousSpeechController {
-  if (typeof window === 'undefined') {
-    return { stop: () => {}, isSupported: false };
-  }
-
-  const SpeechRecognitionCtor =
-    (window as any).SpeechRecognition ||
-    (window as any).webkitSpeechRecognition;
-
-  if (!SpeechRecognitionCtor) {
-    onListeningChange(false);
-    return { stop: () => {}, isSupported: false };
-  }
-
-  let shouldContinue = true;
-  let committedText = initialText ? `${initialText.trim()} ` : '';
-  let currentSessionFinal = '';
-  let recognition: any = null;
-
-  const initAndStart = () => {
-    if (!shouldContinue) return;
-    recognition = new SpeechRecognitionCtor();
-    recognition.lang = 'vi-VN';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => {
-      onListeningChange(true);
-    };
-
-    recognition.onresult = (event: any) => {
-      let finalChunk = '';
-      let interimChunk = '';
-
-      for (let i = 0; i < event.results.length; i++) {
-        const res = event.results[i];
-        const text = res[0]?.transcript || '';
-        if (res.isFinal) {
-          finalChunk += `${text.trim()} `;
-        } else {
-          interimChunk += text;
-        }
-      }
-
-      currentSessionFinal = finalChunk;
-      const combined = `${committedText}${currentSessionFinal}${interimChunk}`
-        .replace(/\s+/g, ' ')
-        .trim();
-      onTranscriptUpdate(combined);
-    };
-
-    recognition.onerror = (event: any) => {
-      if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
-        shouldContinue = false;
-        onListeningChange(false);
-      }
-    };
-
-    recognition.onend = () => {
-      if (currentSessionFinal.trim()) {
-        committedText = `${committedText}${currentSessionFinal.trim()} `;
-        currentSessionFinal = '';
-      }
-      if (shouldContinue) {
-        // Restart seamlessly if the user hasn't clicked Stop yet
-        setTimeout(() => {
-          if (shouldContinue) {
-            try {
-              initAndStart();
-            } catch {
-              onListeningChange(false);
-            }
-          }
-        }, 120);
-      } else {
-        onListeningChange(false);
-      }
-    };
-
-    try {
-      recognition.start();
-    } catch {
-      onListeningChange(false);
-    }
-  };
-
-  initAndStart();
-
-  return {
-    isSupported: true,
-    stop: () => {
-      shouldContinue = false;
-      onListeningChange(false);
-      if (recognition) {
-        try {
-          recognition.stop();
-        } catch {
-          // ignore
-        }
-      }
-    },
-  };
-}
+export { startContinuousVoiceSession, type ContinuousSpeechController } from './voice-session';
 
 export class WebSpeechAdapter implements SpeechToText {
   public async transcribe(

@@ -118,7 +118,7 @@ export function ProductCard({
             {explanationBadges.map((b) => (
               <span
                 key={b}
-                className="badge badge-soft badge-primary badge-xs text-[10px]"
+                className="badge badge-soft badge-primary badge-xs h-auto max-w-full whitespace-normal break-words py-1 text-[10px] leading-relaxed"
               >
                 {b}
               </span>

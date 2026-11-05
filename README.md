@@ -1,5 +1,15 @@
 # MaisonAI / SmartFashion
 
+### Image search with GPT-4o mini RAG
+
+The web upload route forwards images to the NestJS API. The API calls `gpt-4o-mini` through ShopAIKey to extract garment characteristics, retrieves up to 30 relevant product records with BM25, and reranks them using their metadata and a numbered contact sheet of actual product images. Returned IDs are validated against the retrieved records; fabricated IDs and low-relevance matches are discarded.
+
+Set `SHOPAIKEY_API_KEY`, `SHOPAIKEY_BASE_URL=https://api.shopaikey.com/v1`, and `SHOPAIKEY_MODEL=gpt-4o-mini` in `apps/api/.env`, then restart the API. Keys are server-only. API errors are reported rather than converted into mock search results.
+
+`IMAGE_SEARCH_SOURCE=catalog` uses the 334 products currently displayed by the storefront. Set `IMAGE_SEARCH_SOURCE=postgres` with `DATABASE_URL` to retrieve active PostgreSQL records instead; database failures do not silently switch data sources. In Docker, set `API_INTERNAL_URL` on the web service to the backend's internal URL (e.g. `http://api:4000/api/v1`).
+
+Images are resized in memory and sent to ShopAIKey for analysis. The backend retains only the result for two minutes to avoid repeated paid calls; the browser tab keeps the analysis and grounded product snapshots for 30 minutes. No uploaded image is written to disk by this flow. Similarity scores are model relevance estimates, not calibrated probabilities.
+
 AI-enhanced single-store fashion commerce platform implemented from `HTTT.pdf`.
 
 ## Architecture

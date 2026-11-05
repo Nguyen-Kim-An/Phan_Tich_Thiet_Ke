@@ -108,6 +108,8 @@ export default function OutfitsPage() {
   const [activeSlotTab, setActiveSlotTab] = useState<SlotKey>('top');
   const [customVoicePrompt, setCustomVoicePrompt] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [voiceStarting, setVoiceStarting] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const voiceSessionRef = useRef<ContinuousSpeechController | null>(null);
 
   // 2. Real product pools grouped by category
@@ -415,18 +417,27 @@ export default function OutfitsPage() {
 
   // Toggle Voice Mic for criteria
   const handleToggleVoice = () => {
-    if (isRecording) {
-      voiceSessionRef.current?.stop();
+    if (voiceSessionRef.current) {
+      voiceSessionRef.current.stop();
       voiceSessionRef.current = null;
       setIsRecording(false);
+      setVoiceStarting(false);
       return;
     }
-    const sessionCtrl = startContinuousVoiceSession(
+    setVoiceError(null);
+    setVoiceStarting(true);
+    let ended = false;
+    const controller = startContinuousVoiceSession(
       customVoicePrompt,
-      (text) => setCustomVoicePrompt(text),
-      (listening) => setIsRecording(listening)
+      setCustomVoicePrompt,
+      (listening) => {
+        setIsRecording(listening);
+        setVoiceStarting(false);
+        if (!listening) { ended = true; voiceSessionRef.current = null; }
+      },
+      setVoiceError,
     );
-    voiceSessionRef.current = sessionCtrl;
+    voiceSessionRef.current = controller.isSupported && !ended ? controller : null;
   };
 
   return (
@@ -584,17 +595,22 @@ export default function OutfitsPage() {
               })}
             </div>
 
+            {voiceError && (
+              <div role="alert" className="alert alert-warning alert-soft text-sm">{voiceError}</div>
+            )}
+
             {/* Voice input prompt */}
             <div className="pt-2">
               <button
                 type="button"
                 onClick={handleToggleVoice}
+                aria-pressed={isRecording || voiceStarting}
                 className={`btn btn-xs w-full gap-1.5 ${
                   isRecording ? 'btn-error animate-pulse' : 'btn-outline border-base-300'
                 }`}
               >
                 <Icon name="mic" size={13} />
-                <span>{isRecording ? 'Đang nghe giọng nói…' : 'Thêm ghi chú bằng giọng nói'}</span>
+                <span>{voiceStarting ? 'Đang mở mic… Bấm để hủy' : isRecording ? 'Đang nghe… Bấm để dừng' : 'Thêm ghi chú bằng giọng nói'}</span>
               </button>
             </div>
           </div>

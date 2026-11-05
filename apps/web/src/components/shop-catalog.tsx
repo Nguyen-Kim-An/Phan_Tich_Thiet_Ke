@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { BoundingBox, HardFilters, Modality } from '@/domain/models';
+import type { BoundingBox, HardFilters, Modality, SearchResponse } from '@/domain/models';
 import { categories, money } from '@/lib/catalog';
 import { productRepository } from '@/dao/repositories';
 import { searchController } from '@/services/search-orchestrator';
+import { readImageSearch, type ImageSearchSession } from '@/services/image-search-session';
 import { ProductCard } from './product-card';
 import { SearchRail } from './search-rail';
 import { Icon } from './icons';
@@ -28,14 +29,20 @@ export function ShopCatalog({
   initialCategory,
   initialBoxCat = '',
   initialBoxLabel = '',
+  initialImageSearchId = '',
 }: {
   initialQuery: string;
   initialMode: string;
   initialCategory: string;
   initialBoxCat?: string;
   initialBoxLabel?: string;
+  initialImageSearchId?: string;
 }) {
   const router = useRouter();
+  const [imageState, setImageState] = useState<{ id: string; session: ImageSearchSession | null } | null>(null);
+  useEffect(() => {
+    if (initialMode === 'image') setImageState({ id: initialImageSearchId, session: readImageSearch(initialImageSearchId) });
+  }, [initialMode, initialImageSearchId]);
   const category = initialCategory;
   const [sort, setSort] = useState('featured');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -52,7 +59,7 @@ export function ShopCatalog({
     [initialQuery, category]
   );
 
-  const searchResponse = useMemo(() => {
+  const searchResponse = useMemo<SearchResponse>(() => {
     const modality: Modality =
       initialMode === 'image' || initialMode === 'voice'
         ? initialMode
@@ -85,12 +92,40 @@ export function ShopCatalog({
       uiOverrides.maxPrice = undefined;
     }
 
-    return searchController.search({
-      text: initialQuery,
-      modality,
-      selectedBox,
+    const base = searchController.search({
+      text: modality === 'image' ? '' : initialQuery,
+      modality: modality === 'image' ? 'text' : modality,
+      selectedBox: modality === 'image' ? undefined : selectedBox,
       uiOverrides,
     });
+    if (modality !== 'image') return base;
+    const session = imageState?.id === initialImageSearchId ? imageState.session : null;
+
+    const matches = session?.matches || [];
+    return {
+      ...base,
+      queryRepresentation: {
+        ...base.queryRepresentation, rawText: initialQuery, modality: 'image',
+        hardFilters: uiOverrides, softTokens: [], relaxedFilters: [], selectedBox: undefined,
+      },
+      isRelaxed: false, relaxedNotice: undefined,
+      results: matches.flatMap((match, rank) => {
+        const localProduct = productRepository.get(match.productId);
+        const product = session?.source === 'postgres' ? match.product : localProduct || match.product;
+        if (!product || product.productId !== match.productId) return [];
+        if (uiOverrides.categorySlug && product.categorySlug !== uiOverrides.categorySlug) return [];
+        if (uiOverrides.minPrice != null && product.price < uiOverrides.minPrice) return [];
+        if (uiOverrides.maxPrice != null && product.price > uiOverrides.maxPrice) return [];
+        if (uiOverrides.size && !product.variants.some(v => v.size === uiOverrides.size && v.stock > 0)) return [];
+        const badges = [match.reason || 'Trang phục có đặc điểm tương tự'];
+        return [{
+          resultId: `image-${initialImageSearchId}-${product.productId}`,
+          queryId: base.queryRepresentation.queryId, productId: product.productId,
+          rank: rank + 1, score: match.score, badges,
+          product: { ...product, match: undefined, badges },
+        }];
+      }),
+    };
   }, [
     initialQuery,
     initialMode,
@@ -99,6 +134,8 @@ export function ShopCatalog({
     priceBand,
     initialBoxCat,
     initialBoxLabel,
+    initialImageSearchId,
+    imageState,
   ]);
 
   const sortedResults = useMemo(() => {
@@ -120,6 +157,7 @@ export function ShopCatalog({
     if (slug) query.set('category', slug);
     if (initialQuery) query.set('q', initialQuery);
     if (initialMode) query.set('mode', initialMode);
+    if (initialImageSearchId) query.set('imageSearch', initialImageSearchId);
     return `/shop${query.toString() ? `?${query}` : ''}`;
   };
 
@@ -148,7 +186,7 @@ export function ShopCatalog({
           </h1>
           <p className="text-sm sm:text-base text-base-content/70 leading-relaxed">
             {activeCategoryObj?.description ??
-              'Tìm kiếm đa phương thức bằng Từ khóa, Giọng nói Mumble Voice, Hình ảnh hoặc Tra cứu nhanh mã vận đơn.'}
+              'Tìm kiếm đa phương thức bằng Từ khóa, Giọng nói, Hình ảnh hoặc Tra cứu nhanh mã vận đơn.'}
           </p>
         </div>
       </section>
@@ -156,7 +194,7 @@ export function ShopCatalog({
       {/* Search Bar */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 -mt-6">
         <div className="bg-base-100 p-3 sm:p-4 rounded-box border border-base-300 shadow-md">
-          <SearchRail compact />
+          <SearchRail compact initialMode={initialMode === 'image' ? 'image' : initialMode === 'voice' ? 'voice' : 'text'} />
         </div>
       </section>
 
@@ -351,6 +389,15 @@ export function ShopCatalog({
               </Link>
             </div>
 
+            {initialMode === 'image' && (
+              <p role="status" className="text-sm text-base-content/70">
+                {imageState?.id !== initialImageSearchId
+                  ? 'Đang đọc kết quả tìm ảnh…'
+                  : !imageState.session
+                    ? 'Ảnh tìm kiếm đã hết phiên hoặc chưa được tải lên. Hãy chọn ảnh lại; hệ thống không tìm theo tên tệp.'
+                    : `${imageState.session.analysis.description} • Nguồn sản phẩm: ${imageState.session.source === 'postgres' ? 'PostgreSQL' : 'catalog hiện tại'} • Xếp hạng theo đặc điểm trang phục.`}
+              </p>
+            )}
             {/* Extracted Filters & Tokens */}
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
               <span className="text-base-content/60 font-medium">

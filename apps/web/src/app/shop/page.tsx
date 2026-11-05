@@ -9,6 +9,7 @@ export default async function Shop({
     category?: string;
     boxCat?: string;
     boxLabel?: string;
+    imageSearch?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -16,6 +17,7 @@ export default async function Shop({
     <ShopCatalog
       initialQuery={params.q ?? ''}
       initialMode={params.mode ?? ''}
+      initialImageSearchId={params.imageSearch ?? ''}
       initialCategory={params.category ?? ''}
       initialBoxCat={params.boxCat ?? ''}
       initialBoxLabel={params.boxLabel ?? ''}
