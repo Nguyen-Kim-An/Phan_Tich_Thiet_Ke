@@ -341,14 +341,32 @@ export class JsonProductRepository implements ProductRepository {
     newStock: number
   ): Product | undefined {
     this.hydrateFromClientStorage();
-    for (const product of this.products) {
-      const variant = product.variants.find((v) => v.variantId === variantId);
-      if (variant) {
-        const clamped = Math.max(0, newStock);
-        variant.stock = clamped;
-        variant.stockQuantity = clamped;
-        this.persistToClientStorage();
-        return product;
+    const clamped = Math.max(0, newStock);
+    for (let i = 0; i < this.products.length; i++) {
+      const prod = this.products[i];
+      const variantIdx = prod.variants.findIndex((v) => v.variantId === variantId);
+      if (variantIdx >= 0) {
+        const currentVar = prod.variants[variantIdx];
+        const updatedVar = {
+          ...currentVar,
+          stock: clamped,
+          stockQuantity: clamped,
+        };
+        const nextVariants = [...prod.variants];
+        nextVariants[variantIdx] = updatedVar;
+        const updatedProd = {
+          ...prod,
+          variants: nextVariants,
+        };
+        this.products[i] = updatedProd;
+        this.productMap.set(updatedProd.productId, updatedProd);
+        this.version++;
+        try {
+          this.persistToClientStorage();
+        } catch {
+          // ignore
+        }
+        return updatedProd;
       }
     }
     return undefined;

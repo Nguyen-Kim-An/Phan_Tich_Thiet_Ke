@@ -112,7 +112,7 @@ export function ProductPurchase({ product }: { product: Product }) {
           className="btn btn-outline btn-block text-primary border-primary/40 hover:bg-primary/10 hover:border-primary gap-2"
         >
           <Icon name="camera" size={16} />
-          <span>Thử trực tiếp món này với Wearson AI</span>
+          <span>Thử trực tiếp món này với Maison AI</span>
         </Link>
       </div>
     </div>

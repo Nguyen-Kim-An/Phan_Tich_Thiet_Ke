@@ -80,16 +80,25 @@ export function ProductCard({
         </button>
 
         {inStockVariant && !isOutOfStock && (
-          <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0">
+          <div className="absolute inset-x-2.5 bottom-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0 flex items-center gap-1.5">
+            <Link
+              href={`/try-on?product=${product.productId}&variant=${inStockVariant.variantId}`}
+              className="btn btn-primary btn-xs sm:btn-sm flex-1 shadow-md gap-1 px-2 font-medium"
+              title="Thử đồ trực tiếp với Maison AI"
+            >
+              <Icon name="camera" size={14} />
+              <span className="truncate">Thử đồ</span>
+            </Link>
             <button
               type="button"
-              className="btn btn-neutral btn-sm w-full shadow-md gap-2"
+              className="btn btn-neutral btn-xs sm:btn-sm flex-1 shadow-md gap-1 px-2 font-medium"
+              title={`Thêm size ${inStockVariant.size} vào giỏ hàng`}
               onClick={() =>
                 dispatch(cartActions.add({ product, variant: inStockVariant }))
               }
             >
-              <Icon name="plus" size={16} />
-              <span>Thêm nhanh ({inStockVariant.size})</span>
+              <Icon name="plus" size={14} />
+              <span className="truncate">Thêm ({inStockVariant.size})</span>
             </button>
           </div>
         )}

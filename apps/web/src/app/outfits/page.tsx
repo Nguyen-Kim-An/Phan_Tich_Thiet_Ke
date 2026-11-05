@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import type { Product, ProductVariant } from '@/domain/models';
 import { products, money } from '@/lib/catalog';
@@ -66,7 +67,7 @@ const SLOTS: SlotDefinition[] = [
   { key: 'acc', title: 'Giày & Phụ Kiện', categorySlug: 'giay', badge: 'Hoàn thiện set', iconName: 'arrow' },
 ];
 
-export default function OutfitsPage() {
+function OutfitsStudio() {
   const occasionInputName = useId();
   const vibeInputName = useId();
   const budgetInputName = useId();
@@ -88,6 +89,9 @@ export default function OutfitsPage() {
   const [bodyShapeAnalysis, setBodyShapeAnalysis] = useState<string | null>(null);
   const [aiMatchScore, setAiMatchScore] = useState<number | null>(null);
   const voiceSessionRef = useRef<ContinuousSpeechController | null>(null);
+  const searchParams = useSearchParams();
+  const variantParam = searchParams.get('variant');
+  const productParam = searchParams.get('product');
 
   // 2. Real product pools grouped by category
   const topsPool = useMemo(() => products.filter((p) => p.categorySlug === 'ao'), []);
@@ -1415,5 +1419,23 @@ export default function OutfitsPage() {
           </section>
       </div>
     </div>
+  );
+}
+
+
+export default function OutfitsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+          <span className="loading loading-spinner loading-lg text-primary" />
+          <span className="text-xs text-base-content/60">
+            Đang tải Phòng Tư Vấn Phối Đồ Maison AI…
+          </span>
+        </div>
+      }
+    >
+      <OutfitsStudio />
+    </Suspense>
   );
 }

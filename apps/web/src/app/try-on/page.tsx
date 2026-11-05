@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { products, money } from '@/lib/catalog';
 import { cartActions } from '@/store/store';
@@ -13,20 +14,70 @@ import {
   type DecartStatus,
 } from '@/services/decart-client';
 
-export default function TryOnPage() {
+function TryOnStudio() {
   const dispatch = useDispatch();
 
   // All tryable products from Everlane catalog
-  const tryable = products.filter((p) =>
-    ['ao', 'vay', 'ao-khoac', 'quan'].includes(p.categorySlug)
+  const tryable = useMemo(
+    () =>
+      products.filter((p) =>
+        ['ao', 'vay', 'ao-khoac', 'quan'].includes(p.categorySlug)
+      ),
+    []
   );
 
-  const [activeCategory, setActiveCategory] = useState<string>('all');
-  const [product, setProduct] = useState(tryable[0]);
+  const searchParams = useSearchParams();
+  const variantParam = searchParams.get('variant');
+  const productParam = searchParams.get('product');
+
+  // Find target product from query params or fallback to tryable[0]
+  const initialProduct = useMemo(() => {
+    if (variantParam) {
+      const found = products.find((p) =>
+        p.variants.some((v) => v.variantId === variantParam)
+      );
+      if (found) return found;
+    }
+    if (productParam) {
+      const found = products.find((p) => p.productId === productParam);
+      if (found) return found;
+    }
+    return tryable[0];
+  }, [variantParam, productParam, tryable]);
+
+  const [product, setProduct] = useState(initialProduct);
+  const [activeCategory, setActiveCategory] = useState<string>(() => {
+    if (
+      initialProduct &&
+      ['ao', 'vay', 'ao-khoac', 'quan'].includes(initialProduct.categorySlug)
+    ) {
+      return initialProduct.categorySlug;
+    }
+    return 'all';
+  });
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [tryOnResult, setTryOnResult] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Sync state if query params change
+  useEffect(() => {
+    if (initialProduct) {
+      setProduct(initialProduct);
+      if (
+        ['ao', 'vay', 'ao-khoac', 'quan'].includes(initialProduct.categorySlug)
+      ) {
+        setActiveCategory(initialProduct.categorySlug);
+      }
+      setTryOnResult(null);
+      if (decartControllerRef.current) {
+        decartControllerRef.current.setImage(
+          initialProduct.image,
+          `Virtual try-on of ${initialProduct.name}`
+        );
+      }
+    }
+  }, [initialProduct]);
 
   // Decart AI status & Realtime states
   const [decartStatus, setDecartStatus] = useState<DecartStatus | null>(null);
@@ -500,5 +551,23 @@ export default function TryOnPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+
+export default function TryOnPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+          <span className="loading loading-spinner loading-lg text-primary" />
+          <span className="text-xs text-base-content/60">
+            Đang tải Phòng Thử Đồ Maison AI…
+          </span>
+        </div>
+      }
+    >
+      <TryOnStudio />
+    </Suspense>
   );
 }

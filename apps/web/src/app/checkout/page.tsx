@@ -95,12 +95,17 @@ export default function Checkout() {
       const orderCode = `SF-2026-${randomNum}`;
 
       // Deduct variant stock in repository
-      lines.forEach((l) => {
-        if (l.variant?.variantId) {
-          const nextStock = Math.max(0, (l.variant.stock || 8) - l.quantity);
-          productRepository.updateVariantStock(l.variant.variantId, nextStock);
-        }
-      });
+      try {
+        lines.forEach((l) => {
+          if (l.variant?.variantId) {
+            const currentStock = l.variant.stock ?? 8;
+            const nextStock = Math.max(0, currentStock - (l.quantity || 1));
+            productRepository.updateVariantStock(l.variant.variantId, nextStock);
+          }
+        });
+      } catch (err) {
+        console.warn('Cannot update variant stock:', err);
+      }
 
       const newOrder: Order = {
         orderId,
