@@ -139,12 +139,14 @@ export default function OutfitsPage() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [realtimeMsg, setRealtimeMsg] = useState('Sẵn sàng kết nối tới Decart Lucy V-TON 3.5');
-  const [liveLatency, setLiveLatency] = useState(120);
+  const [liveLatency, setLiveLatency] = useState<number | null>(null);
   const [tryOnProcessing, setTryOnProcessing] = useState(false);
   const [tryOnResultImage, setTryOnResultImage] = useState<string | null>(null);
   const [showOriginalCompare, setShowOriginalCompare] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const previewStreamRef = useRef<MediaStream | null>(null);
+  const [cameraConnecting, setCameraConnecting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const decartControllerRef = useRef<DecartRealtimeController | null>(null);
   const tryOnSectionRef = useRef<HTMLDivElement>(null);
@@ -301,8 +303,14 @@ export default function OutfitsPage() {
 
   // Webcam Controls for Realtime Try-On: BƯỚC 3 theo đúng chuẩn Decart Anywear
   const startRealtimeWebcam = async () => {
+    if (cameraConnecting) return;
+    setCameraConnecting(true);
+    setLiveLatency(null);
     setCameraError(null);
     try {
+      const status = await getDecartStatus();
+      setDecartStatus(status);
+      if (!status.configured) throw new Error(status.message || 'Chưa cấu hình Decart.');
       const isMobile = window.innerWidth <= 768;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -314,18 +322,14 @@ export default function OutfitsPage() {
         audio: false,
       });
       setCameraActive(true);
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-        }
-      }, 100);
+      previewStreamRef.current = stream;
 
       // Khởi tạo Decart Realtime Controller với remote stream và latency callback
       if (!decartControllerRef.current) {
         decartControllerRef.current = new DecartRealtimeController(
           (remoteStream) => {
             // Nhận luồng video AI đã khoác áo stream ngược về từ Decart
+            previewStreamRef.current = remoteStream;
             if (videoRef.current) {
               videoRef.current.srcObject = remoteStream;
               videoRef.current.play().catch(() => {});
@@ -333,6 +337,7 @@ export default function OutfitsPage() {
           },
           (status, message) => {
             setRealtimeConnected(status === 'connected');
+            if (status === 'error') setCameraError(message || 'Decart gặp lỗi.');
             if (message) setRealtimeMsg(message);
           },
           (latency) => {
@@ -343,11 +348,13 @@ export default function OutfitsPage() {
 
       const garmentImg = tryOnGarment?.image || selectedTop?.image || '';
       const prompt = `Virtual try-on of ${tryOnGarment?.name || 'outfit'}, natural fabric drape and realistic fit`;
-      await decartControllerRef.current.connect(stream, garmentImg, prompt);
-    } catch {
-      setCameraError(
-        'Không tìm thấy Webcam hoặc quyền truy cập Camera bị từ chối. Bạn có thể chọn ảnh mẫu người mẫu hoặc tải ảnh từ máy tính để thử đồ.'
-      );
+      const connected = await decartControllerRef.current.connect(stream, garmentImg, prompt);
+      if (!connected) setCameraActive(false);
+    } catch (error) {
+      setCameraError(error instanceof Error ? error.message : 'Không thể mở webcam hoặc kết nối Decart.');
+      setCameraActive(false);
+    } finally {
+      setCameraConnecting(false);
     }
   };
 
@@ -375,7 +382,7 @@ export default function OutfitsPage() {
       setUserBodyPhoto(dataUrl);
       stopRealtimeWebcam();
       // Run Decart try-on job with snapshot
-      runDecartPhotoTryOn(dataUrl);
+
     }
   };
 
@@ -385,6 +392,7 @@ export default function OutfitsPage() {
     const garment = tryOnGarment || selectedTop;
     if (!photo || !garment) return;
 
+    setCameraError(null);
     setTryOnProcessing(true);
     setShowOriginalCompare(false);
     try {
@@ -398,7 +406,8 @@ export default function OutfitsPage() {
       setTryOnResultImage(res.resultImageUrl);
     } catch (err: any) {
       console.warn('Decart Try-On note:', err);
-      setTryOnResultImage(garment.image);
+      setTryOnResultImage(null);
+      setCameraError(err instanceof Error ? err.message : 'Không xử lý được ảnh thử đồ.');
     } finally {
       setTryOnProcessing(false);
     }
@@ -900,14 +909,14 @@ export default function OutfitsPage() {
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="badge badge-primary text-xs font-bold">
-                  Decart AI • Lucy VTON 3.6
+                  Decart AI • Lucy VTON 3.5
                 </span>
                 <span
                   className={`badge badge-sm ${
                     decartStatus?.configured ? 'badge-success' : 'badge-neutral'
                   }`}
                 >
-                  {decartStatus?.configured ? 'Live API Active (dct_...fBkd)' : 'Sandbox Mode'}
+                  {decartStatus?.configured ? 'Đã lưu khóa • Chưa xác minh' : 'Chưa cấu hình / API lỗi'}
                 </span>
                 <span className="badge badge-outline badge-sm">Realtime Neural Stream</span>
               </div>
@@ -984,7 +993,13 @@ export default function OutfitsPage() {
                 /* LIVE WEBCAM MIRROR */
                 <div className="relative w-full h-full min-h-[460px] sm:min-h-[520px] flex items-center justify-center bg-black rounded-field overflow-hidden">
                   <video
-                    ref={videoRef}
+                    ref={(node) => {
+                  videoRef.current = node;
+                  if (node && previewStreamRef.current) {
+                    node.srcObject = previewStreamRef.current;
+                    void node.play().catch(() => {});
+                  }
+                }}
                     autoPlay
                     playsInline
                     muted
@@ -1008,7 +1023,7 @@ export default function OutfitsPage() {
                       <span className="font-bold">Decart Lucy V-TON 3.5 • WebRTC Stream</span>
                     </div>
                     <span className="text-white/80">
-                      Độ trễ AI: <strong>~{liveLatency}ms</strong> • FPS: 30 • WebRTC DataChannel Active
+                      Độ trễ AI: <strong>{liveLatency == null ? 'Chưa đo' : `${liveLatency} ms`}</strong>
                     </span>
                     <span className="text-emerald-300 text-[10px]">{realtimeMsg}</span>
                   </div>
@@ -1042,7 +1057,7 @@ export default function OutfitsPage() {
                   />
                   <div className="absolute top-3 left-3">
                     <span className="badge badge-success badge-sm shadow-sm">
-                      Mô Phỏng Decart AI Hoàn Tất (96%)
+                      Kết quả thử đồ
                     </span>
                   </div>
                 </div>
@@ -1100,6 +1115,7 @@ export default function OutfitsPage() {
                   <button
                     type="button"
                     onClick={startRealtimeWebcam}
+                  disabled={cameraConnecting}
                     className="btn btn-primary btn-sm gap-2"
                   >
                     <Icon name="camera" size={16} />
@@ -1174,7 +1190,7 @@ export default function OutfitsPage() {
               <div className="space-y-3 pt-2 border-t border-base-300">
                 <button
                   type="button"
-                  disabled={tryOnProcessing}
+                  disabled={true}
                   onClick={() => runDecartPhotoTryOn()}
                   className="btn btn-neutral btn-block btn-lg shadow-md gap-2"
                 >
@@ -1186,7 +1202,7 @@ export default function OutfitsPage() {
                   ) : (
                     <>
                       <Icon name="spark" size={18} />
-                      <span>Thử Món Này Với Decart Lucy VTON</span>
+                      <span>Thử đồ ảnh tĩnh — Chưa hỗ trợ</span>
                     </>
                   )}
                 </button>

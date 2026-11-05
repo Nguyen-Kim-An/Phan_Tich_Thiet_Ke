@@ -1,6 +1,6 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpException, HttpStatus, Param, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
-import * as crypto from 'crypto';
+import { createDecartClient } from '@decartai/sdk';
 import { DatabaseService } from '../database.service';
 
 @Controller('ai')
@@ -46,162 +46,105 @@ export class AiController {
     );
   }
 
-  // =========================================================================
-  // DECART AI VIRTUAL TRY-ON (LUCY VTON 3.6 / REALTIME STREAMING) INTEGRATION
-  // =========================================================================
-
   @Get('decart/status')
   getDecartStatus() {
-    const apiKey = process.env.DECART_API_KEY || '';
-    const hasKey = Boolean(apiKey && apiKey.trim().length > 6);
+    const configured = Boolean(process.env.DECART_API_KEY?.trim());
     return {
-      provider: 'Decart AI',
-      service: 'Lucy VTON (Virtual Try-On)',
-      modelRealtime: 'lucy-vton-3.6',
-      modelBatch: 'lucy-vton-3.6',
-      configured: hasKey,
-      keyMasked: hasKey ? `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}` : null,
-      mode: hasKey ? 'live' : 'sandbox',
-      capabilities: ['realtime_webrtc_stream', 'video_queue', 'garment_reference_tryon'],
+      provider: 'Decart AI', service: 'Virtual Try-On',
+      modelRealtime: 'lucy-vton-3.5', modelBatch: '',
+      configured, keyMasked: null,
+      mode: configured ? 'ready' : 'unconfigured',
+      capabilities: ['realtime_webrtc_stream', 'garment_reference_tryon'],
+      message: configured
+        ? 'Đã có khóa trên backend; chưa xác minh với Decart.'
+        : 'Chưa cấu hình DECART_API_KEY trong apps/api/.env.',
     };
   }
 
   @Post('decart/token')
-  async getDecartClientToken() {
-    return this.issueDecartToken({ site: 'safework.ctslab.net' });
+  async getDecartClientToken(@Headers('origin') origin?: string) {
+    return this.issueDecartToken({}, origin);
   }
 
-  /**
-   * BƯỚC 1: Cấp Token phiên ngắn hạn (Domain Authentication)
-   * POST /api/v1/ai/decart/tokens
-   */
   @Post('decart/tokens')
-  async issueDecartToken(@Body() body: { site?: string; installation_id?: string }) {
-    const apiKey = process.env.DECART_API_KEY || '';
-    const site = body?.site || 'safework.ctslab.net';
-    const installationId = body?.installation_id || `install-${crypto.randomBytes(8).toString('hex')}`;
-
-    // Thử liên hệ trực tiếp Decart Anywear token endpoint
-    try {
-      const res = await fetch('https://anywear.decart.ai/api/tokens', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(apiKey ? { Authorization: `Bearer ${apiKey}`, 'x-api-key': apiKey } : {}),
-        },
-        body: JSON.stringify({ site, installation_id: installationId }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        return {
-          ...data,
-          signalingHost: 'wss://api3.decart.ai/v1/stream',
-          model: 'lucy-vton-3.5',
-          configured: true,
-        };
-      }
-    } catch (err) {
-      // Fallback
+  async issueDecartToken(
+    @Body() body: { site?: string; installation_id?: string },
+    @Headers('origin') origin?: string,
+  ) {
+    const allowedOrigins = (process.env.DECART_ALLOWED_ORIGINS || process.env.WEB_ORIGIN || 'http://localhost:3000')
+      .split(',').map((value) => value.trim()).filter(Boolean);
+    if (!origin || !allowedOrigins.includes(origin)) {
+      throw new HttpException('Website này chưa được phép tạo token Decart.', HttpStatus.FORBIDDEN);
     }
-
-    // Nếu Decart yêu cầu domain whitelist hoặc môi trường dev, cấp token xác thực ký tự động có hạn 10 phút
-    const issuedAt = new Date().toISOString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    const clientToken = `decart_client_tok_${crypto.randomBytes(16).toString('hex')}`;
-
-    return {
-      apiKey: clientToken,
-      issuedAt,
-      expiresAt,
-      signalingHost: 'wss://api3.decart.ai/v1/stream',
-      model: 'lucy-vton-3.5',
-      site,
-      installation_id: installationId,
-      configured: Boolean(apiKey && apiKey.length > 6),
-      gatewayUrl: 'wss://api3.decart.ai/v1/stream?model=lucy-vton-3.5',
-    };
+    if (body?.site && body.site !== new URL(origin).hostname) {
+      throw new HttpException('Domain yêu cầu không khớp Origin của trình duyệt.', HttpStatus.BAD_REQUEST);
+    }
+    const apiKey = process.env.DECART_API_KEY?.trim();
+    if (!apiKey) {
+      throw new HttpException('Chưa cấu hình DECART_API_KEY trong apps/api/.env.', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    try {
+      const client = createDecartClient({ apiKey });
+      const token = await client.tokens.create({
+        expiresIn: 600,
+        allowedModels: ['lucy-vton-3.5'], allowedOrigins: [origin],
+        metadata: { installation_id: String(body?.installation_id || '').slice(0, 128) },
+      });
+      if (!token.apiKey || !Number.isFinite(Date.parse(token.expiresAt)) || Date.parse(token.expiresAt) <= Date.now()) {
+        throw new Error('Invalid upstream token');
+      }
+      return { apiKey: token.apiKey, expiresAt: token.expiresAt, model: 'lucy-vton-3.5' };
+    } catch {
+      throw new HttpException(
+        'Decart không cấp được token. Kiểm tra API key, quyền tài khoản và kết nối tới api.decart.ai.',
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
   }
 
-  /**
-   * BƯỚC 2: Proxy và bóc tách ảnh sản phẩm tránh lỗi CORS cho WebRTC / WebGL
-   * GET /api/v1/ai/decart/proxy-image?url=...
-   */
   @Get('decart/proxy-image')
   async proxyProductImage(@Query('url') rawUrl: string, @Res() res: Response) {
-    if (!rawUrl) {
-      return res.status(HttpStatus.BAD_REQUEST).send('Missing url parameter');
+    let url: URL;
+    try { url = new URL(rawUrl); } catch {
+      return res.status(HttpStatus.BAD_REQUEST).send('URL ảnh không hợp lệ.');
     }
-
-    const decodedUrl = decodeURIComponent(rawUrl);
-
-    // Thử fetch qua Decart Anywear proxy trước
+    const hosts = (process.env.DECART_IMAGE_HOSTS || 'cdn.shopify.com,images.unsplash.com')
+      .split(',').map((host) => host.trim()).filter(Boolean);
+    if (url.protocol !== 'https:' || url.username || url.password || url.port || !hosts.includes(url.hostname)) {
+      return res.status(HttpStatus.FORBIDDEN).send('Nguồn ảnh chưa được cho phép.');
+    }
     try {
-      const decartProxyRes = await fetch(
-        `https://anywear.decart.ai/api/proxy-image?url=${encodeURIComponent(decodedUrl)}`
-      );
-      if (decartProxyRes.ok) {
-        const buffer = await decartProxyRes.arrayBuffer();
-        res.setHeader('Content-Type', decartProxyRes.headers.get('content-type') || 'image/jpeg');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-        return res.send(Buffer.from(buffer));
+      const upstream = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(15000) });
+      const contentType = upstream.headers.get('content-type') || '';
+      if (!upstream.ok || !contentType.startsWith('image/')) {
+        await upstream.body?.cancel();
+        return res.status(HttpStatus.BAD_GATEWAY).send('Không tải được ảnh trang phục.');
       }
+      const limit = 10 * 1024 * 1024;
+      if (Number(upstream.headers.get('content-length')) > limit) {
+        await upstream.body?.cancel();
+        return res.status(HttpStatus.PAYLOAD_TOO_LARGE).send('Ảnh vượt quá 10 MB.');
+      }
+      const chunks: Uint8Array[] = [];
+      let size = 0;
+      for await (const chunk of upstream.body as unknown as AsyncIterable<Uint8Array>) {
+        size += chunk.length;
+        if (size > limit) throw new Error('Image too large');
+        chunks.push(chunk);
+      }
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.send(Buffer.concat(chunks));
     } catch {
-      // Fallback to direct fetch
-    }
-
-    try {
-      const directRes = await fetch(decodedUrl);
-      if (!directRes.ok) {
-        return res.status(directRes.status).send('Failed to fetch image');
-      }
-      const buffer = await directRes.arrayBuffer();
-      res.setHeader('Content-Type', directRes.headers.get('content-type') || 'image/jpeg');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
-      return res.send(Buffer.from(buffer));
-    } catch (err: any) {
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(err?.message || 'Proxy error');
+      return res.status(HttpStatus.BAD_GATEWAY).send('Tải ảnh thất bại hoặc quá thời gian chờ.');
     }
   }
 
   @Post('decart/tryon-job')
-  async createDecartTryOnJob(
-    @Body()
-    body: {
-      userImageUrl: string;
-      garmentImageUrl: string;
-      prompt?: string;
-      category?: string;
-      resolution?: '720p' | '1080p';
-    }
-  ) {
-    const apiKey = process.env.DECART_API_KEY;
-    const jobId = `decart-job-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const isLive = Boolean(apiKey && apiKey.trim().length > 8);
-
-    // Return structured, realistic Decart Lucy VTON result
-    return {
-      jobId,
-      provider: isLive ? 'Decart AI Lucy VTON 3.6 (Live Key Active)' : 'Decart AI Lucy VTON (Sandbox)',
-      status: 'completed',
-      model: 'lucy-vton-3.6',
-      prompt: body.prompt || 'Wearing the selected garments with accurate fabric drape & silhouette',
-      userImageUrl: body.userImageUrl,
-      garmentImageUrl: body.garmentImageUrl,
-      resultImageUrl: body.userImageUrl,
-      fitScore: isLive ? 98 : 95,
-      authenticated: isLive,
-      keyMasked: isLive ? `${apiKey!.slice(0, 4)}...${apiKey!.slice(-4)}` : null,
-      drapeAnalysis: {
-        shoulderDrape: 'Khớp bờ vai tự nhiên, tỷ lệ may đo chuẩn xác (Decart Neural Warping)',
-        waistContour: 'Chiết eo mềm mại, tôn dáng theo phom nhân trắc học',
-        fabricPhysics: 'Mô phỏng trọng lực chất liệu vải & độ bóng đa chiều',
-      },
-      message: isLive
-        ? 'Decart Lucy VTON 3.6 đã xác thực API Key thành công và xử lý phom dáng trang phục!'
-        : 'Chế độ mô phỏng trực quan. Đã kích hoạt pipeline thử đồ ảo.',
-    };
+  async createDecartTryOnJob() {
+    throw new HttpException(
+      'Thử đồ bằng ảnh tĩnh chưa được tích hợp. Hãy dùng webcam để thử đồ realtime; hệ thống không tạo kết quả giả.',
+      HttpStatus.NOT_IMPLEMENTED,
+    );
   }
 }

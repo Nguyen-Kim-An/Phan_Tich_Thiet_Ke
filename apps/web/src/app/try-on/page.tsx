@@ -60,10 +60,12 @@ export default function TryOnPage() {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [realtimeMsg, setRealtimeMsg] = useState('Đang sẵn sàng kết nối tới Decart Lucy V-TON 3.5');
-  const [liveLatency, setLiveLatency] = useState(120);
+  const [liveLatency, setLiveLatency] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const previewStreamRef = useRef<MediaStream | null>(null);
+  const [cameraConnecting, setCameraConnecting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const decartControllerRef = useRef<DecartRealtimeController | null>(null);
 
@@ -92,8 +94,14 @@ export default function TryOnPage() {
 
   // BƯỚC 3: Mở luồng WebRTC thời gian thực (@decartai/sdk / LiveKit)
   const startRealtimeCamera = async () => {
+    if (cameraConnecting) return;
+    setCameraConnecting(true);
+    setLiveLatency(null);
     setCameraError(null);
     try {
+      const status = await getDecartStatus();
+      setDecartStatus(status);
+      if (!status.configured) throw new Error(status.message || 'Chưa cấu hình Decart.');
       const isMobile = window.innerWidth <= 768;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -105,23 +113,20 @@ export default function TryOnPage() {
         audio: false,
       });
       setCameraActive(true);
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-        }
-      }, 100);
+      previewStreamRef.current = stream;
 
       if (!decartControllerRef.current) {
         decartControllerRef.current = new DecartRealtimeController(
           (remoteStream) => {
             // Nhận luồng video AI đã khoác áo stream ngược về từ Decart
+            previewStreamRef.current = remoteStream;
             if (videoRef.current) {
               videoRef.current.srcObject = remoteStream;
               videoRef.current.play().catch(() => {});
             }
           },
           (status, msg) => {
+            if (status === 'error') setCameraError(msg || 'Decart gặp lỗi.');
             if (msg) setRealtimeMsg(msg);
           },
           (latency) => {
@@ -130,15 +135,17 @@ export default function TryOnPage() {
         );
       }
 
-      await decartControllerRef.current.connect(
+      const connected = await decartControllerRef.current.connect(
         stream,
         product.image,
         `Realtime virtual try-on of ${product.name}`
       );
-    } catch {
-      setCameraError(
-        'Không thể mở Webcam hoặc chưa cấp quyền Camera. Bạn có thể chọn người mẫu hoặc tải ảnh chụp từ máy.'
-      );
+      if (!connected) setCameraActive(false);
+    } catch (error) {
+      setCameraError(error instanceof Error ? error.message : 'Không thể mở webcam hoặc kết nối Decart.');
+      setCameraActive(false);
+    } finally {
+      setCameraConnecting(false);
     }
   };
 
@@ -153,6 +160,7 @@ export default function TryOnPage() {
   // Run Decart Virtual Try-On API Job
   const runDecartTryOnJob = async () => {
     if (!userPhoto || !product) return;
+    setCameraError(null);
     setIsProcessing(true);
     setShowOriginal(false);
     try {
@@ -166,7 +174,8 @@ export default function TryOnPage() {
       setTryOnResult(res.resultImageUrl);
     } catch (err: any) {
       console.warn('Decart Try-On note:', err);
-      setTryOnResult(product.image);
+      setTryOnResult(null);
+      setCameraError(err instanceof Error ? err.message : 'Không xử lý được ảnh thử đồ.');
     } finally {
       setIsProcessing(false);
     }
@@ -181,13 +190,13 @@ export default function TryOnPage() {
       <div className="text-center max-w-3xl mx-auto space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider">
           <Icon name="camera" size={14} />
-          <span>Decart AI Virtual Try-On Studio • Lucy VTON 3.6</span>
+          <span>Decart AI Virtual Try-On Studio • Lucy VTON 3.5</span>
         </div>
         <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-neutral font-normal">
           Phòng Thử Đồ Trực Tiếp Realtime
         </h1>
         <p className="text-sm sm:text-base text-base-content/75">
-          Trực tiếp soi gương webcam để thử quần áo thời gian thực qua Decart AI, hoặc tải ảnh chụp toàn thân để tái tạo phom dáng chuẩn xác. Bạn cũng có thể mở{' '}
+          Bật webcam để thử quần áo thời gian thực qua Decart AI. Ảnh tải lên hiện chỉ dùng để xem trước; thử đồ từ ảnh tĩnh chưa được hỗ trợ. Bạn cũng có thể mở{' '}
           <Link href="/outfits" className="text-primary font-semibold underline">
             Phòng Tư Vấn Phối Đồ
           </Link>{' '}
@@ -203,7 +212,13 @@ export default function TryOnPage() {
             /* LIVE WEBCAM FEED */
             <div className="relative w-full h-full min-h-[480px] sm:min-h-[560px] flex items-center justify-center bg-black rounded-field overflow-hidden">
               <video
-                ref={videoRef}
+                ref={(node) => {
+                  videoRef.current = node;
+                  if (node && previewStreamRef.current) {
+                    node.srcObject = previewStreamRef.current;
+                    void node.play().catch(() => {});
+                  }
+                }}
                 autoPlay
                 playsInline
                 muted
@@ -227,7 +242,7 @@ export default function TryOnPage() {
                   <span className="font-bold">Decart Lucy V-TON 3.5 • Realtime WebRTC</span>
                 </div>
                 <span className="text-white/80">
-                  Độ trễ AI: <strong>~{liveLatency}ms</strong> • FPS: 30 • HD 720p
+                  Độ trễ AI: <strong>{liveLatency == null ? 'Chưa đo' : `${liveLatency} ms`}</strong>
                 </span>
                 <span className="text-emerald-300 text-[10px]">{realtimeMsg}</span>
               </div>
@@ -246,14 +261,14 @@ export default function TryOnPage() {
                         ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
                         setUserPhoto(canvas.toDataURL('image/jpeg', 0.92));
                         stopRealtimeCamera();
-                        runDecartTryOnJob();
+
                       }
                     }
                   }}
                   className="btn btn-primary btn-sm gap-1.5 shadow-md"
                 >
                   <Icon name="camera" size={15} />
-                  <span>Chụp Ảnh & Ghép Nét Cao</span>
+                  <span>Chụp Ảnh Webcam</span>
                 </button>
                 <button
                   type="button"
@@ -274,7 +289,7 @@ export default function TryOnPage() {
               />
               <div className="absolute top-3 left-3">
                 <span className="badge badge-success badge-sm shadow-sm">
-                  Decart Lucy VTON 3.6 Hoàn Tất (96% Phom Dáng)
+                  Decart Lucy VTON 3.5 Hoàn Tất
                 </span>
               </div>
             </div>
@@ -327,14 +342,14 @@ export default function TryOnPage() {
           <div className="bg-primary/5 border border-primary/20 rounded-box p-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="badge badge-primary badge-xs">Decart AI</span>
-              <span className="text-xs font-semibold text-primary">Lucy VTON 3.6</span>
+              <span className="text-xs font-semibold text-primary">Lucy VTON 3.5</span>
             </div>
             <span
               className={`badge badge-xs ${
                 decartStatus?.configured ? 'badge-success' : 'badge-neutral'
               }`}
             >
-              {decartStatus?.configured ? 'Live API Active' : 'Sandbox Mode'}
+              {decartStatus?.configured ? 'Đã lưu khóa • Chưa xác minh' : 'Chưa cấu hình / API lỗi'}
             </span>
           </div>
 
@@ -359,6 +374,7 @@ export default function TryOnPage() {
             <button
               type="button"
               onClick={startRealtimeCamera}
+                  disabled={cameraConnecting}
               className="btn btn-primary btn-sm gap-2"
             >
               <Icon name="camera" size={16} />
@@ -501,7 +517,7 @@ export default function TryOnPage() {
           <div className="space-y-2.5 pt-2 border-t border-base-300">
             <button
               type="button"
-              disabled={isProcessing}
+              disabled={true}
               onClick={runDecartTryOnJob}
               className="btn btn-neutral btn-block btn-lg shadow-md gap-2"
             >
@@ -513,7 +529,7 @@ export default function TryOnPage() {
               ) : (
                 <>
                   <Icon name="spark" size={18} />
-                  <span>Mô Phỏng Thử Đồ Với Decart AI</span>
+                  <span>Thử đồ ảnh tĩnh — Chưa hỗ trợ</span>
                 </>
               )}
             </button>

@@ -11,7 +11,7 @@ import { StylistController } from './modules/stylist.controller';
 import { StylistService } from './modules/stylist.service';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), JwtModule.register({ global: true, secret: process.env.JWT_SECRET ?? 'development-secret-change-before-production', signOptions: { expiresIn: '15m' } })],
+  imports: [ConfigModule.forRoot({ isGlobal: true, envFilePath: ['apps/api/.env', '.env'] }), JwtModule.register({ global: true, secret: process.env.JWT_SECRET ?? 'development-secret-change-before-production', signOptions: { expiresIn: '15m' } })],
   controllers: [AuthController, CatalogController, CommerceController, AiController, AdminController, StylistController],
   providers: [DatabaseService, StylistService],
 })

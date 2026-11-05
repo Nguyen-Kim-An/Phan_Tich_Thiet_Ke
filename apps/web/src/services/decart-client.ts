@@ -1,14 +1,4 @@
-/**
- * Decart AI Virtual Try-On Client Integration
- * Model: Lucy V-TON 3.5 / 3.6 Realtime WebRTC Stream
- * Architecture: Decart Anywear Realtime Pipeline
- *
- * 4-Step Pipeline:
- *  Bước 1: POST https://anywear.decart.ai/api/tokens (Domain Authentication + 10min Ephemeral Token)
- *  Bước 2: GET https://anywear.decart.ai/api/proxy-image?url=... (CORS bypass & image optimizer)
- *  Bước 3: WebRTC / Signaling Host: wss://api3.decart.ai/v1/stream (LiveKit / RTCPeerConnection @ 30fps)
- *  Bước 4: DataChannel / Signaling: { type: "set_image", image_ref, prompt, enhance_prompt: true }
- */
+import type { RealTimeClient } from '@decartai/sdk';
 
 export interface DecartStatus {
   provider: string;
@@ -17,13 +7,14 @@ export interface DecartStatus {
   modelBatch: string;
   configured: boolean;
   keyMasked: string | null;
-  mode: 'live' | 'sandbox';
+  mode: 'ready' | 'unconfigured' | 'unavailable';
+  message?: string;
   capabilities: string[];
 }
 
 export interface DecartSessionToken {
   apiKey: string;
-  issuedAt: string;
+  issuedAt?: string;
   expiresAt: string;
   signalingHost?: string;
   model?: string;
@@ -52,350 +43,170 @@ export interface DecartTryOnResult {
   };
 }
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
-/**
- * Lấy hoặc khởi tạo ID cài đặt (installation_id) lưu trữ trong localStorage
- */
-export function getOrCreateInstallationId(): string {
-  if (typeof window === 'undefined') return 'c1f7b8-ssr-init';
-  const key = 'decart_installation_id';
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = `c1f7b8${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
-    localStorage.setItem(key, id);
+async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/ai/decart/${path}`, {
+      ...init, signal: AbortSignal.timeout(20000), cache: 'no-store',
+    });
+  } catch {
+    throw new Error('Không kết nối được backend Decart. Kiểm tra API tại cổng 4000.');
   }
-  return id;
+  const body = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(body?.message || `Decart API trả lỗi HTTP ${response.status}.`);
+  }
+  return body as T;
 }
 
-/**
- * Kiểm tra trạng thái cấu hình Decart trên Backend
- */
+export function getOrCreateInstallationId(): string {
+  const key = 'decart_installation_id';
+  try {
+    const previous = localStorage.getItem(key);
+    if (previous) return previous;
+    const id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+    return id;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
 export async function getDecartStatus(): Promise<DecartStatus> {
   try {
-    const res = await fetch(`${API_BASE_URL}/ai/decart/status`, { method: 'GET' });
-    if (!res.ok) throw new Error('Status endpoint unavailable');
-    return (await res.json()) as DecartStatus;
-  } catch {
+    return await apiRequest<DecartStatus>('status');
+  } catch (error) {
     return {
-      provider: 'Decart AI',
-      service: 'Lucy V-TON 3.5 (Virtual Try-On)',
-      modelRealtime: 'lucy-vton-3.5',
-      modelBatch: 'lucy-vton-3.5',
-      configured: false,
-      keyMasked: null,
-      mode: 'sandbox',
-      capabilities: ['realtime_webrtc_stream', 'video_queue', 'garment_reference_tryon'],
+      provider: 'Decart AI', service: 'Virtual Try-On',
+      modelRealtime: 'lucy-vton-3.5', modelBatch: '', configured: false,
+      keyMasked: null, mode: 'unavailable', capabilities: [],
+      message: error instanceof Error ? error.message : 'Backend không khả dụng.',
     };
   }
 }
 
-/**
- * BƯỚC 1: Xin cấp Token phiên ngắn hạn (Domain Authentication)
- * POST https://anywear.decart.ai/api/tokens (qua gateway backend hoặc trực tiếp)
- */
 export async function fetchDecartSessionToken(siteDomain?: string): Promise<DecartSessionToken> {
-  const installationId = getOrCreateInstallationId();
-  const site =
-    siteDomain ||
-    (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-      ? window.location.hostname
-      : 'safework.ctslab.net');
-
-  try {
-    const res = await fetch(`${API_BASE_URL}/ai/decart/tokens`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ site, installation_id: installationId }),
-    });
-
-    if (res.ok) {
-      return (await res.json()) as DecartSessionToken;
-    }
-  } catch (err) {
-    console.warn('Backend token gateway note:', err);
+  const token = await apiRequest<DecartSessionToken>('tokens', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      site: siteDomain || window.location.hostname,
+      installation_id: getOrCreateInstallationId(),
+    }),
+  });
+  if (!token.apiKey || !Number.isFinite(Date.parse(token.expiresAt)) || Date.parse(token.expiresAt) <= Date.now()) {
+    throw new Error('Backend không trả về token Decart hợp lệ còn hạn.');
   }
-
-  // Fallback direct or sandbox token
-  return {
-    apiKey: `decart_client_tok_${Math.random().toString(36).slice(2, 12)}`,
-    issuedAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-    signalingHost: 'wss://api3.decart.ai/v1/stream',
-    model: 'lucy-vton-3.5',
-    configured: true,
-  };
+  return token;
 }
 
-/**
- * BƯỚC 2: Proxy và bóc tách ảnh sản phẩm tránh lỗi bảo mật CORS
- * GET https://anywear.decart.ai/api/proxy-image?url=...
- */
 export function getProxiedGarmentUrl(rawImageUrl: string): string {
-  if (!rawImageUrl) return '';
-  // Ưu tiên gateway proxy backend để bảo đảm luôn vượt qua mọi CORS restriction
-  return `${API_BASE_URL}/ai/decart/proxy-image?url=${encodeURIComponent(rawImageUrl)}`;
+  const url = new URL(rawImageUrl, window.location.origin);
+  if (url.origin === window.location.origin) return url.href;
+  return `${API_BASE_URL}/ai/decart/proxy-image?url=${encodeURIComponent(url.href)}`;
 }
 
-/**
- * Gửi Job mô phỏng ảnh chất lượng cao tới Decart Lucy VTON
- */
+async function loadGarment(url: string): Promise<Blob> {
+  const response = await fetch(getProxiedGarmentUrl(url), { signal: AbortSignal.timeout(15000) });
+  if (!response.ok) throw new Error(`Không tải được ảnh trang phục (HTTP ${response.status}).`);
+  const blob = await response.blob();
+  if (!blob.type.startsWith('image/') || !blob.size) throw new Error('Ảnh trang phục không hợp lệ.');
+  return blob;
+}
+
 export async function executeDecartTryOn(params: DecartTryOnParams): Promise<DecartTryOnResult> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/ai/decart/tryon-job`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
-    });
-    if (!res.ok) throw new Error('TryOn Job API error');
-    return (await res.json()) as DecartTryOnResult;
-  } catch (err: any) {
-    return {
-      jobId: `local-${Date.now()}`,
-      provider: 'Decart AI Lucy V-TON 3.5',
-      status: 'completed',
-      resultImageUrl: params.userImageUrl,
-      fitScore: 96,
-      message: 'Mô phỏng phom dáng hoàn tất.',
-      drapeAnalysis: {
-        shoulderDrape: 'Tỷ lệ phom vai được căn chỉnh theo chuẩn Lucy V-TON 3.5',
-        waistContour: 'Đường chiết eo tự nhiên theo form trang phục thực tế',
-        fabricPhysics: 'Mô phỏng trọng lực chất liệu vải chính xác',
-      },
-    };
-  }
+  return apiRequest<DecartTryOnResult>('tryon-job', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params),
+  });
 }
 
-/**
- * BƯỚC 3 & 4: Bộ điều khiển WebRTC Realtime (@decartai/sdk Stream Engine)
- *
- * Mở luồng WebRTC thời gian thực tới wss://api3.decart.ai/v1/stream
- * Khi người dùng đổi mẫu áo / quần, chỉ bắn gói tin control `set_image` qua DataChannel
- * mà KHÔNG cần kết nối lại camera.
- */
 export class DecartRealtimeController {
-  private peerConnection: RTCPeerConnection | null = null;
-  private dataChannel: RTCDataChannel | null = null;
-  private ws: WebSocket | null = null;
-  private isConnected = false;
+  private realtime: RealTimeClient | null = null;
+  private inputStream: MediaStream | null = null;
   private currentGarmentUrl = '';
-  private currentPrompt = '';
-  private latencyMs = 120;
-  private latencyInterval: any = null;
+  private generation = 0;
+  private imageUpdate = 0;
 
   constructor(
     private readonly onRemoteStream?: (stream: MediaStream) => void,
-    private readonly onStatusChange?: (
-      status: 'connecting' | 'connected' | 'disconnected' | 'error',
-      message?: string
-    ) => void,
-    private readonly onLatencyUpdate?: (latencyMs: number) => void
+    private readonly onStatusChange?: (status: 'connecting' | 'connected' | 'disconnected' | 'error', message?: string) => void,
+    private readonly onLatencyUpdate?: (latencyMs: number) => void,
   ) {}
 
-  /**
-   * Bước 3: Mở luồng WebRTC thời gian thực
-   */
-  public async connect(
-    userMediaStream: MediaStream,
-    initialGarmentUrl: string,
-    initialPrompt = ''
-  ): Promise<boolean> {
-    this.currentGarmentUrl = initialGarmentUrl;
-    this.currentPrompt = initialPrompt;
-    this.onStatusChange?.('connecting', 'Bước 1: Đang xin cấp Token phiên ngắn hạn (Domain Auth)...');
-
+  public async connect(stream: MediaStream, garmentUrl: string, prompt = ''): Promise<boolean> {
+    this.disconnect();
+    const generation = this.generation;
+    this.inputStream = stream;
+    this.currentGarmentUrl = garmentUrl;
+    this.onStatusChange?.('connecting', 'Đang xin token và kết nối Decart...');
     try {
-      // 1. Xin Token phiên ngắn hạn (10 phút)
-      const tokenSession = await fetchDecartSessionToken();
-      this.onStatusChange?.(
-        'connecting',
-        `Bước 1 xong: Đã nhận token ${tokenSession.apiKey.slice(0, 14)}... Đang kết nối WebRTC...`
-      );
-
-      // 2. Cấu hình luồng stream chuẩn Decart Anywear
-      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-      const streamConfig = {
-        urlPath: '/v1/stream',
-        name: 'lucy-vton-3.5',
-        fps: { ideal: 30, max: 30 },
-        width: isMobile ? 624 : 1088,
-        height: isMobile ? 1088 : 624,
-      };
-
-      // 3. Khởi tạo RTCPeerConnection kết hợp WebSocket Signaling Host wss://api3.decart.ai/v1/stream
-      const signalingHost = tokenSession.signalingHost || 'wss://api3.decart.ai/v1/stream';
-      const wsUrl = `${signalingHost}?model=${streamConfig.name}&token=${encodeURIComponent(
-        tokenSession.apiKey
-      )}`;
-
-      try {
-        this.peerConnection = new RTCPeerConnection({
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-          ],
-        });
-
-        // Đẩy track video webcam lên PeerConnection
-        userMediaStream.getVideoTracks().forEach((track) => {
-          this.peerConnection?.addTrack(track, userMediaStream);
-        });
-
-        // Tạo Data Channel điều khiển để gửi lệnh set_image
-        this.dataChannel = this.peerConnection.createDataChannel('control', {
-          ordered: true,
-        });
-
-        this.dataChannel.onopen = () => {
-          this.isConnected = true;
-          this.onStatusChange?.(
-            'connected',
-            'Đã kết nối luồng WebRTC Lucy V-TON 3.5! Từng frame đang được AI khoác áo.'
-          );
-          // Gửi lệnh set_image ban đầu
-          this.setImage(this.currentGarmentUrl, this.currentPrompt);
-        };
-
-        this.peerConnection.ontrack = (event) => {
-          if (event.streams && event.streams[0]) {
-            this.onRemoteStream?.(event.streams[0]);
+      const { createDecartClient, models } = await import('@decartai/sdk');
+      const model = models.realtime('lucy-vton-3.5');
+      const client = createDecartClient({
+        apiKeyProvider: async () => (await fetchDecartSessionToken()).apiKey,
+      });
+      const image = garmentUrl ? await loadGarment(garmentUrl) : undefined;
+      if (generation !== this.generation) return false;
+      const realtime = await client.realtime.connect(stream, {
+        model, retries: 0,
+        initialState: { image, prompt: { text: prompt, enhance: true } },
+        onRemoteStream: (remoteStream) => {
+          if (generation === this.generation) this.onRemoteStream?.(remoteStream);
+        },
+        onConnectionChange: (state) => {
+          if (generation !== this.generation) return;
+          if (state === 'connected' || state === 'generating') {
+            this.onStatusChange?.('connected', 'Đã kết nối Decart. Đang nhận video thử đồ.');
+          } else if (state === 'disconnected') {
+            this.onStatusChange?.('disconnected', 'Phiên Decart đã ngắt kết nối.');
+          } else {
+            this.onStatusChange?.('connecting', 'Đang kết nối Decart...');
           }
-        };
-      } catch (pcErr) {
-        console.warn('WebRTC native peer warning, falling back to signaling socket:', pcErr);
-      }
-
-      // Kết nối Signaling WebSocket
-      try {
-        this.ws = new WebSocket(wsUrl);
-
-        this.ws.onopen = () => {
-          this.isConnected = true;
-          this.onStatusChange?.(
-            'connected',
-            'Kênh truyền phát Decart Lucy V-TON 3.5 đã sẵn sàng! Độ trễ: 100 - 150ms.'
-          );
-          this.setImage(this.currentGarmentUrl, this.currentPrompt);
-        };
-
-        this.ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.type === 'latency' && typeof data.ms === 'number') {
-              this.latencyMs = data.ms;
-              this.onLatencyUpdate?.(data.ms);
-            }
-          } catch {}
-        };
-
-        this.ws.onerror = () => {
-          // Fallback simulation mode
-          this.isConnected = true;
-          this.onStatusChange?.(
-            'connected',
-            'Đang chạy luồng mô phỏng Gương Thử Đồ AI trực quan (Lucy V-TON 3.5 Engine).'
-          );
-          this.setImage(this.currentGarmentUrl, this.currentPrompt);
-        };
-
-        this.ws.onclose = () => {
-          // Socket closed
-        };
-      } catch {
-        this.isConnected = true;
-        this.setImage(this.currentGarmentUrl, this.currentPrompt);
-      }
-
-      // Giả lập đo đạc độ trễ mạng thực tế 100 - 180ms
-      this.latencyInterval = setInterval(() => {
-        const jitter = Math.floor(Math.random() * 35) - 15;
-        this.latencyMs = Math.max(98, Math.min(185, 125 + jitter));
-        this.onLatencyUpdate?.(this.latencyMs);
-      }, 1200);
-
-      this.isConnected = true;
+        },
+      });
+      if (generation !== this.generation) { realtime.disconnect(); return false; }
+      this.realtime = realtime;
+      realtime.on('error', (error) => this.onStatusChange?.('error', `${error.code}: ${error.message}`));
+      realtime.on('stats', (stats) => {
+        const latency = stats.glassToGlass?.medianMs;
+        if (latency != null) this.onLatencyUpdate?.(Math.round(latency));
+      });
       return true;
-    } catch (err: any) {
-      this.onStatusChange?.('error', err?.message || 'Không thể mở luồng WebRTC Decart.');
+    } catch (error) {
+      if (generation !== this.generation) return false;
+      this.disconnect();
+      this.onStatusChange?.('error', error instanceof Error ? error.message : 'Không thể kết nối Decart.');
       return false;
     }
   }
 
-  /**
-   * BƯỚC 4: "Mặc đồ" bằng gói tin Signaling set_image
-   *
-   * Khi người dùng đổi mẫu áo/quần hoặc đổi màu, hàm này được gọi trực tiếp.
-   * KHÔNG cần kết nối lại camera, chỉ bắn gói tin điều khiển Control message qua DataChannel/WebSocket.
-   */
-  public setImage(garmentUrl: string, prompt = '') {
-    if (!garmentUrl) return;
+  public setImage(garmentUrl: string, prompt = ''): void {
     this.currentGarmentUrl = garmentUrl;
-    this.currentPrompt = prompt;
-
-    // Bước 2: Chuẩn hóa qua proxy để AI nạp không bị CORS
-    const proxiedUrl = getProxiedGarmentUrl(garmentUrl);
-
-    // Gói tin điều khiển chuẩn của Decart Lucy V-TON:
-    const controlMessage = {
-      type: 'set_image',
-      image_ref: proxiedUrl,
-      prompt: prompt || '',
-      enhance_prompt: true,
-      timestamp: Date.now(),
-    };
-
-    const payload = JSON.stringify(controlMessage);
-
-    // Gửi qua WebRTC DataChannel nếu đang mở
-    if (this.dataChannel && this.dataChannel.readyState === 'open') {
+    const realtime = this.realtime;
+    if (!realtime?.isConnected() || !garmentUrl) return;
+    const update = ++this.imageUpdate;
+    void (async () => {
       try {
-        this.dataChannel.send(payload);
-      } catch (err) {
-        console.warn('DataChannel send error:', err);
+        const image = await loadGarment(garmentUrl);
+        if (update !== this.imageUpdate || realtime !== this.realtime) return;
+        await realtime.setImage(image, { prompt, enhance: true });
+        this.onStatusChange?.('connected', 'Decart đã xác nhận cập nhật trang phục.');
+      } catch (error) {
+        this.onStatusChange?.('error', error instanceof Error ? error.message : 'Không cập nhật được trang phục.');
       }
-    }
-
-    // Hoặc gửi qua Signaling WebSocket
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      try {
-        this.ws.send(payload);
-      } catch (err) {
-        console.warn('Signaling WebSocket send error:', err);
-      }
-    }
-
-    this.onStatusChange?.(
-      'connected',
-      `Đã phát lệnh set_image: Cụm GPU Decart nạp mẫu mới vào mô hình Lucy V-TON 3.5 (Độ trễ ~${this.latencyMs}ms).`
-    );
+    })();
   }
 
-  /**
-   * Dừng phiên làm việc và đóng toàn bộ kênh truyền phát
-   */
-  public disconnect() {
-    if (this.latencyInterval) {
-      clearInterval(this.latencyInterval);
-      this.latencyInterval = null;
-    }
-    if (this.dataChannel) {
-      this.dataChannel.close();
-      this.dataChannel = null;
-    }
-    if (this.peerConnection) {
-      this.peerConnection.close();
-      this.peerConnection = null;
-    }
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-    this.isConnected = false;
-    this.onStatusChange?.('disconnected', 'Đã dừng luồng camera gương thử đồ.');
+  public disconnect(): void {
+    this.generation++;
+    this.imageUpdate++;
+    this.realtime?.disconnect();
+    this.realtime = null;
+    this.inputStream?.getTracks().forEach((track) => track.stop());
+    this.inputStream = null;
+    this.onStatusChange?.('disconnected', 'Đã dừng phiên thử đồ.');
   }
 
-  public getActiveGarmentUrl(): string {
-    return this.currentGarmentUrl;
-  }
+  public getActiveGarmentUrl(): string { return this.currentGarmentUrl; }
 }

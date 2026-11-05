@@ -1,4 +1,12 @@
-const apiKey = 'dct_test_qvkAJzTuFewzCNYiMYGtnLpDGCMSIejqAapnfqJNjFdiJqtaaybwilhavPJZfBkd';
+const { existsSync } = require('node:fs');
+const { resolve } = require('node:path');
+const envPath = resolve(__dirname, '../apps/api/.env');
+if (existsSync(envPath)) process.loadEnvFile(envPath);
+const apiKey = process.env.DECART_API_KEY;
+if (!apiKey) {
+  console.error('Missing DECART_API_KEY. Set it in apps/api/.env or your shell environment.');
+  process.exit(1);
+}
 
 async function testDecart() {
   try {
