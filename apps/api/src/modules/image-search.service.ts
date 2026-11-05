@@ -128,7 +128,8 @@ export class ImageSearchService {
 
   async detect(buffer: Buffer): Promise<{ boxes: GarmentBox[] }> {
     const image = await this.prepareImage(buffer);
-    const key = createHash('sha256').update(image).update(process.env.SHOPAIKEY_MODEL || 'gpt-4o-mini').digest('hex');
+    const model = process.env.SHOPAIKEY_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    const key = createHash('sha256').update(image).update(model).digest('hex');
     const cached = this.regions.get(key);
     if (cached && cached.expires > Date.now()) return { boxes: cached.boxes };
     const value = await this.complete([
@@ -193,10 +194,11 @@ Boxes are approximate selection suggestions, not pixel-perfect segmentation. Ens
   }
 
   private async complete(messages: unknown[], maxTokens: number): Promise<unknown> {
-    const key = process.env.SHOPAIKEY_API_KEY?.trim();
+    const key = (process.env.SHOPAIKEY_API_KEY || process.env.OPENAI_API_KEY)?.trim();
     if (!key) throw new HttpException('Chưa cấu hình SHOPAIKEY_API_KEY trên backend.', HttpStatus.SERVICE_UNAVAILABLE);
-    const base = (process.env.SHOPAIKEY_BASE_URL || 'https://api.shopaikey.com/v1').replace(/\/$/, '');
-    if (new URL(base).origin !== 'https://api.shopaikey.com') {
+    const base = (process.env.SHOPAIKEY_BASE_URL || process.env.OPENAI_BASE_URL || 'https://api.shopaikey.com/v1').replace(/\/$/, '');
+    const origin = new URL(base).origin;
+    if (origin !== 'https://api.shopaikey.com' && origin !== 'https://api.openai.com') {
       throw new HttpException('SHOPAIKEY_BASE_URL không hợp lệ.', HttpStatus.SERVICE_UNAVAILABLE);
     }
     let response: Response;
@@ -204,7 +206,7 @@ Boxes are approximate selection suggestions, not pixel-perfect segmentation. Ens
       response = await fetch(`${base}/chat/completions`, {
         method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         signal: AbortSignal.timeout(45000), redirect: 'error',
-        body: JSON.stringify({ model: process.env.SHOPAIKEY_MODEL || 'gpt-4o-mini', messages,
+        body: JSON.stringify({ model: process.env.SHOPAIKEY_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini', messages,
           temperature: 0, max_tokens: maxTokens, response_format: { type: 'json_object' } }),
       });
     } catch {
@@ -267,7 +269,7 @@ Boxes are approximate selection suggestions, not pixel-perfect segmentation. Ens
     if (targetCategory && !CATEGORIES.includes(targetCategory as typeof CATEGORIES[number])) {
       throw new HttpException('Loại trang phục được chọn không hợp lệ.', HttpStatus.BAD_REQUEST);
     }
-    if (!process.env.SHOPAIKEY_API_KEY?.trim()) throw new HttpException('Chưa cấu hình SHOPAIKEY_API_KEY trên backend.', HttpStatus.SERVICE_UNAVAILABLE);
+    if (!(process.env.SHOPAIKEY_API_KEY || process.env.OPENAI_API_KEY)?.trim()) throw new HttpException('Chưa cấu hình SHOPAIKEY_API_KEY trên backend.', HttpStatus.SERVICE_UNAVAILABLE);
     let image = await this.prepareImage(buffer);
     if (selectedBox) {
       const box = validateBoxes([selectedBox])[0];
@@ -280,7 +282,7 @@ Boxes are approximate selection suggestions, not pixel-perfect segmentation. Ens
         height: Math.min(height - top, Math.max(1, Math.round(box.height * height / 100))) }).jpeg({ quality: 85 }).toBuffer();
     }
     const { source, products } = await this.loadProducts();
-    const model = process.env.SHOPAIKEY_MODEL || 'gpt-4o-mini';
+    const model = process.env.SHOPAIKEY_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini';
     const cacheKey = createHash('sha256').update(image).update(model).update(source).update(targetCategory).update(JSON.stringify(products)).digest('hex');
     const cached = this.cache.get(cacheKey);
     if (cached && cached.expires > Date.now()) return cached.result;

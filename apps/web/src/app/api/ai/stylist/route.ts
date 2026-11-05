@@ -65,9 +65,9 @@ export async function POST(req: Request) {
       ...candidateAccs.slice(0, 4).map((p) => ({ id: p.productId, role: 'acc', name: p.name, price: p.price, colors: p.colors })),
     ];
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.shopaikey.com/v1';
-    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    const apiKey = process.env.SHOPAIKEY_API_KEY || process.env.OPENAI_API_KEY;
+    const baseUrl = process.env.SHOPAIKEY_BASE_URL || process.env.OPENAI_BASE_URL || 'https://api.shopaikey.com/v1';
+    const model = process.env.SHOPAIKEY_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
     let aiResult: {
       selectedTopId?: string;
